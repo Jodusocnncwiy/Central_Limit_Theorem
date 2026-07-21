@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>中央極限定理 (CLT) 互動視覺化模擬器</title>
+    <title>Jodus中央極限定理 (Central Limit Theorem) 互動視覺化模擬器</title>
     <!-- 引入 Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- 引入 Chart.js -->
@@ -53,6 +53,7 @@
             <h2 class="text-xl font-semibold mb-2 text-blue-700">什麼是中央極限定理？</h2>
             <p class="text-slate-600 leading-relaxed">
                 中央極限定理告訴我們：從任何一個母體（不論其形狀是均勻、偏態還是雙峰）中，隨機抽取大小為 <strong class="text-slate-800">n</strong> 的樣本。當 <strong class="text-slate-800">n</strong> 夠大時（通常 n ≥ 30），這些「樣本平均數」的分佈將會趨近於一個<strong>常態分配 (Normal Distribution，即鐘形曲線)</strong>。
+                <br>其理論樣本平均數期望值維持不變：<code class="bg-slate-100 px-1.5 py-0.5 rounded text-blue-800 font-mono">μ<sub>x̄</sub> = μ</code>，而理論標準差（標準誤）則為：<code class="bg-slate-100 px-1.5 py-0.5 rounded text-blue-800 font-mono">σ<sub>x̄</sub> = σ / √n</code>。
                 <br>這就是為什麼常態分配在統計學中如此重要，因為它讓我們能在不知道母體真實形狀的情況下，仍能進行推論！
             </p>
         </div>
@@ -116,7 +117,7 @@
                             <p class="text-xs font-semibold text-blue-500">實驗值 (樣本平均數分佈)</p>
                             <p>平均數: <span id="sampleMeanDisplay" class="font-bold text-blue-700">--</span></p>
                             <p>標準差: <span id="sampleStdDisplay" class="font-bold text-blue-700">--</span></p>
-                            <p class="text-xs text-slate-500 mt-1">理論標準誤 (σ/√n): <span id="theoreticalStdErrDisplay" class="font-semibold text-slate-700">--</span></p>
+                            <p>理論標準誤 (σ/√n): <span id="theoreticalStdErrDisplay" class="font-bold text-slate-900">--</span></p>
                         </div>
                     </div>
                 </div>
@@ -199,7 +200,6 @@
             bimodal: {
                 mean: 50,
                 // 兩個常態 N(25, 10) 和 N(75, 10) 混合，各佔 50%
-                // 變異數 = E[X^2] - (E[X])^2 = 3125 - 2500 = 625 -> std = 25
                 std: 25,
                 generate: () => {
                     let u = 0, v = 0;
