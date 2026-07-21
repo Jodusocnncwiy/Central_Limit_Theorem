@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>中央極限定理 (CLT) 互動視覺化模擬器</title>
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- 引入 Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #f8fafc;
+        }
+        /* 自定義滑桿樣式 */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: #3b82f6;
+            cursor: pointer;
+            margin-top: -6px;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 6px;
+            cursor: pointer;
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body class="text-slate-800">
+
+    <nav class="bg-blue-600 text-white p-4 shadow-md">
+        <div class="max-w-7xl mx-auto px-4 flex items-center justify-between">
+            <h1 class="text-2xl font-bold">中央極限定理 (Central Limit Theorem)</h1>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto px-4 py-8">
+        
+        <div class="bg-white rounded-xl shadow-sm p-6 mb-8 border border-slate-200">
+            <h2 class="text-xl font-semibold mb-2 text-blue-700">什麼是中央極限定理？</h2>
+            <p class="text-slate-600 leading-relaxed">
+                中央極限定理告訴我們：從任何一個母體（不論其形狀是均勻、偏態還是雙峰）中，隨機抽取大小為 <strong class="text-slate-800">n</strong> 的樣本。當 <strong class="text-slate-800">n</strong> 夠大時（通常 n ≥ 30），這些「樣本平均數」的分佈將會趨近於一個<strong>常態分配 (Normal Distribution，即鐘形曲線)</strong>。
+                <br>這就是為什麼常態分配在統計學中如此重要，因為它讓我們能在不知道母體真實形狀的情況下，仍能進行推論！
+            </p>
+        </div>
+
+        <div class="flex flex-col lg:flex-row gap-8 items-stretch">
+            
+            <!-- 左側：控制面板 (使用 h-full 與 flex 確保與右側等高對齊) -->
+            <div class="w-full lg:w-1/3 flex flex-col">
+                <div class="bg-white rounded-xl shadow-sm p-6 border border-slate-200 flex-1 flex flex-col justify-between">
+                    <div>
+                        <h3 class="text-lg font-bold mb-4 border-b pb-2">設定與操作</h3>
+                        
+                        <!-- 母體分佈選擇 -->
+                        <div class="mb-5">
+                            <label class="block text-sm font-medium text-slate-700 mb-2">1. 選擇母體分佈 (Population Distribution)</label>
+                            <select id="distSelect" class="w-full bg-slate-50 border border-slate-300 text-slate-900 rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none transition-colors">
+                                <option value="normal">常態分配 (Normal)</option>
+                                <option value="uniform">均勻分配 (Uniform)</option>
+                                <option value="exponential">指數分配 (Exponential/偏態)</option>
+                                <option value="bimodal">雙峰分配 (Bimodal)</option>
+                            </select>
+                        </div>
+
+                        <!-- 樣本大小滑桿 -->
+                        <div class="mb-5">
+                            <label class="block text-sm font-medium text-slate-700 mb-2">
+                                2. 每次抽樣的樣本數 (Sample Size, n): <span id="sampleSizeDisplay" class="text-blue-600 font-bold text-lg">30</span>
+                            </label>
+                            <input type="range" id="sampleSizeSlider" min="10" max="200" value="30" class="w-full">
+                            <p class="text-xs text-slate-500 mt-1">每次從母體中抽出 n 個數據，並計算其平均值。</p>
+                        </div>
+
+                        <!-- 抽樣按鈕 -->
+                        <div class="mb-5">
+                            <label class="block text-sm font-medium text-slate-700 mb-2">3. 重複抽樣次數 (Draw Samples)</label>
+                            <div class="grid grid-cols-2 gap-2 mb-2">
+                                <button onclick="drawSamples(1)" class="bg-blue-100 hover:bg-blue-200 text-blue-700 font-semibold py-2 px-4 rounded transition-colors text-sm">抽樣 1 次</button>
+                                <button onclick="drawSamples(10)" class="bg-blue-200 hover:bg-blue-300 text-blue-800 font-semibold py-2 px-4 rounded transition-colors text-sm">抽樣 10 次</button>
+                                <button onclick="drawSamples(100)" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded transition-colors text-sm">抽樣 100 次</button>
+                                <button onclick="drawSamples(1000)" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded transition-colors text-sm">抽樣 1000 次</button>
+                            </div>
+                            <button onclick="drawSamples(10000)" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded transition-colors text-sm mb-2 shadow-sm">
+                                快速抽樣 10,000 次
+                            </button>
+                            <button onclick="resetExperiment()" class="w-full bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-2 px-4 rounded transition-colors text-sm">
+                                清除所有抽樣資料 (Reset)
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 統計數據面板 -->
+                    <div class="bg-slate-50 p-4 rounded-lg border border-slate-200 mt-4">
+                        <h4 class="text-sm font-bold text-slate-700 mb-2">統計摘要</h4>
+                        <div class="text-sm space-y-1 text-slate-600">
+                            <p>已抽取樣本次數: <span id="totalDrawsDisplay" class="font-bold text-slate-900">0</span></p>
+                            <div class="my-2 border-t border-slate-300"></div>
+                            <p class="text-xs font-semibold text-slate-500">理論值 (母體)</p>
+                            <p>平均數 (μ): <span id="popMeanDisplay" class="font-bold text-slate-900">--</span></p>
+                            <p>標準差 (σ): <span id="popStdDisplay" class="font-bold text-slate-900">--</span></p>
+                            <div class="my-2 border-t border-slate-300"></div>
+                            <p class="text-xs font-semibold text-blue-500">實驗值 (樣本平均數分佈)</p>
+                            <p>平均數: <span id="sampleMeanDisplay" class="font-bold text-blue-700">--</span></p>
+                            <p>標準差: <span id="sampleStdDisplay" class="font-bold text-blue-700">--</span></p>
+                            <p class="text-xs text-slate-500 mt-1">理論標準誤 (σ/√n): <span id="theoreticalStdErrDisplay" class="font-semibold text-slate-700">--</span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="w-full lg:w-2/3 flex flex-col justify-between space-y-6">
+                
+                <!-- 母體分佈圖 -->
+                <div class="bg-white rounded-xl shadow-sm p-4 border border-slate-200 flex-1">
+                    <h3 class="text-center font-bold text-slate-700 mb-2">母體分佈形狀 (Population Distribution)</h3>
+                    <div class="relative h-48 w-full">
+                        <canvas id="populationChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- 樣本平均數分佈圖 (直方圖) -->
+                <div class="bg-white rounded-xl shadow-sm p-4 border border-slate-200 flex-1">
+                    <div class="flex justify-between items-center mb-2">
+                        <h3 class="font-bold text-blue-700">樣本平均數的分佈 (Distribution of Sample Means)</h3>
+                        <div class="flex items-center space-x-2 text-sm">
+                            <input type="checkbox" id="showCurve" class="rounded text-blue-600 focus:ring-blue-500" checked onchange="updateSampleChart()">
+                            <label for="showCurve" class="text-slate-600 cursor-pointer">顯示理論常態曲線</label>
+                        </div>
+                    </div>
+                    <div class="relative h-72 w-full">
+                        <canvas id="sampleChart"></canvas>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ----------------- 核心狀態變數 -----------------
+        let currentDist = 'normal';
+        let sampleSize = 30; // 預設初值設為 30
+        let sampleMeans = []; // 儲存所有抽出的樣本平均數
+        
+        // 圖表實例
+        let popChartInstance = null;
+        let sampleChartInstance = null;
+
+        // X軸範圍固定為 0 到 100，便於直觀比較
+        const X_MIN = 0;
+        const X_MAX = 100;
+        const NUM_BINS = 50; 
+        const BIN_WIDTH = (X_MAX - X_MIN) / NUM_BINS;
+
+        // ----------------- 數學與統計函數 -----------------
+
+        // 母體參數設定
+        const distParams = {
+            normal: {
+                mean: 50,
+                std: 15,
+                generate: () => {
+                    // Box-Muller transform
+                    let u = 0, v = 0;
+                    while(u === 0) u = Math.random();
+                    while(v === 0) v = Math.random();
+                    let num = Math.sqrt( -2.0 * Math.log( u ) ) * Math.cos( 2.0 * Math.PI * v );
+                    return (num * 15) + 50;
+                },
+                pdf: (x) => normalPdf(x, 50, 15)
+            },
+            uniform: {
+                mean: 50,
+                std: Math.sqrt(Math.pow(100, 2) / 12), // 約 28.867
+                generate: () => Math.random() * 100,
+                pdf: (x) => (x >= 0 && x <= 100) ? 1/100 : 0
+            },
+            exponential: {
+                mean: 20,
+                std: 20,
+                // Inverse transform sampling
+                generate: () => -Math.log(1.0 - Math.random()) * 20,
+                pdf: (x) => (x >= 0) ? (1/20) * Math.exp(-x/20) : 0
+            },
+            bimodal: {
+                mean: 50,
+                // 兩個常態 N(25, 10) 和 N(75, 10) 混合，各佔 50%
+                // 變異數 = E[X^2] - (E[X])^2 = 3125 - 2500 = 625 -> std = 25
+                std: 25,
+                generate: () => {
+                    let u = 0, v = 0;
+                    while(u === 0) u = Math.random();
+                    while(v === 0) v = Math.random();
+                    let num = Math.sqrt( -2.0 * Math.log( u ) ) * Math.cos( 2.0 * Math.PI * v );
+                    let isFirstPeak = Math.random() < 0.5;
+                    if(isFirstPeak) return (num * 10) + 25;
+                    else return (num * 10) + 75;
+                },
+                pdf: (x) => 0.5 * normalPdf(x, 25, 10) + 0.5 * normalPdf(x, 75, 10)
+            }
+        };
+
+        // 常態分配 PDF 函數
+        function normalPdf(x, mean, std) {
+            return (1 / (std * Math.sqrt(2 * Math.PI))) * Math.exp(-0.5 * Math.pow((x - mean) / std, 2));
+        }
+
+        // 計算陣列平均數
+        function calcMean(arr) {
+            if(arr.length === 0) return 0;
+            return arr.reduce((a, b) => a + b, 0) / arr.length;
+        }
+
+        // 計算陣列標準差 (樣本標準差)
+        function calcStd(arr, mean) {
+            if(arr.length < 2) return 0;
+            let sumSq = arr.reduce((a, b) => a + Math.pow(b - mean, 2), 0);
+            return Math.sqrt(sumSq / (arr.length - 1));
+        }
+
+        // 將數據分箱 (Histogram Binning)
+        function createHistogramData(data) {
+            let bins = new Array(NUM_BINS).fill(0);
+            for (let val of data) {
+                if (val < X_MIN || val > X_MAX) continue; // 忽略極端值以保持圖表整潔
+                let index = Math.floor((val - X_MIN) / BIN_WIDTH);
+                if (index === NUM_BINS) index--; // 處理剛好等於最大值的邊界情況
+                bins[index]++;
+            }
+            return bins;
+        }
+
+        
+        // DOM 元素載入後初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            initCharts();
+            updateUI();
+
+            // 監聽母體下拉選單
+            document.getElementById('distSelect').addEventListener('change', (e) => {
+                currentDist = e.target.value;
+                resetExperiment();
+            });
+
+            // 監聽樣本大小滑桿
+            document.getElementById('sampleSizeSlider').addEventListener('input', (e) => {
+                sampleSize = parseInt(e.target.value);
+                document.getElementById('sampleSizeDisplay').innerText = sampleSize;
+                resetExperiment(); // 改變樣本大小需重置實驗
+            });
+        });
+
+        function resetExperiment() {
+            sampleMeans = [];
+            updateUI();
+            updatePopulationChart();
+            updateSampleChart();
+        }
+
+        function updateUI() {
+            let p = distParams[currentDist];
+            document.getElementById('popMeanDisplay').innerText = p.mean.toFixed(2);
+            document.getElementById('popStdDisplay').innerText = p.std.toFixed(2);
+            document.getElementById('totalDrawsDisplay').innerText = sampleMeans.length.toLocaleString();
+            
+            let theoStdErr = p.std / Math.sqrt(sampleSize);
+            document.getElementById('theoreticalStdErrDisplay').innerText = theoStdErr.toFixed(2);
+
+            if(sampleMeans.length > 0) {
+                let sMean = calcMean(sampleMeans);
+                let sStd = calcStd(sampleMeans, sMean);
+                document.getElementById('sampleMeanDisplay').innerText = sMean.toFixed(2);
+                document.getElementById('sampleStdDisplay').innerText = sStd.toFixed(2);
+            } else {
+                document.getElementById('sampleMeanDisplay').innerText = "--";
+                document.getElementById('sampleStdDisplay').innerText = "--";
+            }
+        }
+
+
+        // 執行抽樣
+        function drawSamples(numSamples) {
+            let generator = distParams[currentDist].generate;
+            
+            for (let i = 0; i < numSamples; i++) {
+                let currentSampleSum = 0;
+                for (let j = 0; j < sampleSize; j++) {
+                    currentSampleSum += generator();
+                }
+                let mean = currentSampleSum / sampleSize;
+                sampleMeans.push(mean);
+            }
+            
+            updateSampleChart();
+            updateUI();
+        }
+
+
+        // 初始化圖表
+        function initCharts() {
+            // 生成 X 軸標籤 (0, 2, 4 ... 100)
+            const labels = [];
+            for (let i = 0; i < NUM_BINS; i++) {
+                labels.push((X_MIN + i * BIN_WIDTH + BIN_WIDTH/2).toFixed(0));
+            }
+
+            // --- 母體圖表 ---
+            const popCtx = document.getElementById('populationChart').getContext('2d');
+            popChartInstance = new Chart(popCtx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '機率密度 (Probability Density)',
+                        data: [],
+                        borderColor: 'rgba(71, 85, 105, 1)', // slate-600
+                        backgroundColor: 'rgba(148, 163, 184, 0.2)', // slate-400 with opacity
+                        fill: true,
+                        pointRadius: 0,
+                        tension: 0.4,
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: false,
+                    plugins: { legend: { display: false }, tooltip: { enabled: false } },
+                    scales: {
+                        x: { 
+                            grid: { display: false },
+                            ticks: { maxTicksLimit: 10 }
+                        },
+                        y: { display: false, beginAtZero: true }
+                    }
+                }
+            });
+
+            // --- 樣本平均數分佈圖 ---
+            const sampleCtx = document.getElementById('sampleChart').getContext('2d');
+            sampleChartInstance = new Chart(sampleCtx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: '理論常態曲線',
+                            data: [],
+                            type: 'line',
+                            borderColor: 'rgba(239, 68, 68, 1)', // red-500
+                            borderWidth: 2,
+                            pointRadius: 0,
+                            fill: false,
+                            tension: 0.4,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: '樣本平均數頻率 (次數)',
+                            data: [],
+                            backgroundColor: 'rgba(59, 130, 246, 0.7)', // blue-500
+                            borderColor: 'rgba(37, 99, 235, 1)', // blue-600
+                            borderWidth: 1,
+                            barPercentage: 1.0,
+                            categoryPercentage: 1.0,
+                            yAxisID: 'y'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: { duration: 200 }, // 給一點小動畫讓抽樣看起來順暢
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { 
+                            grid: { display: false },
+                            ticks: { maxTicksLimit: 10 }
+                        },
+                        y: { 
+                            beginAtZero: true,
+                            title: { display: true, text: '頻率 (次數)' }
+                        }
+                    }
+                }
+            });
+
+            updatePopulationChart();
+            updateSampleChart();
+        }
+
+        // 更新母體圖表
+        function updatePopulationChart() {
+            let p = distParams[currentDist];
+            let data = [];
+            for (let i = 0; i < NUM_BINS; i++) {
+                let x = X_MIN + i * BIN_WIDTH + (BIN_WIDTH / 2);
+                data.push(p.pdf(x));
+            }
+            popChartInstance.data.datasets[0].data = data;
+            
+            // 動態調整 Y 軸最大值以適應不同分佈
+            let maxY = Math.max(...data) * 1.1;
+            popChartInstance.options.scales.y.max = maxY > 0 ? maxY : 0.1;
+            
+            popChartInstance.update();
+        }
+
+        // 更新樣本平均數圖表
+        function updateSampleChart() {
+            let histData = createHistogramData(sampleMeans);
+            sampleChartInstance.data.datasets[1].data = histData; // 更新直方圖資料
+
+            let showCurve = document.getElementById('showCurve').checked;
+            
+            if (showCurve && sampleMeans.length > 0) {
+                // 計算理論常態曲線資料並縮放至與直方圖同高
+                let p = distParams[currentDist];
+                let theoStdErr = p.std / Math.sqrt(sampleSize);
+                
+                // 曲線的縮放係數 (總面積 = 樣本數 * 組距)
+                let scaleFactor = sampleMeans.length * BIN_WIDTH;
+                
+                let curveData = [];
+                for (let i = 0; i < NUM_BINS; i++) {
+                    let x = X_MIN + i * BIN_WIDTH + (BIN_WIDTH / 2);
+                    let y = normalPdf(x, p.mean, theoStdErr) * scaleFactor;
+                    curveData.push(y);
+                }
+                sampleChartInstance.data.datasets[0].data = curveData;
+            } else {
+                sampleChartInstance.data.datasets[0].data = [];
+            }
+
+            sampleChartInstance.update();
+        }
+
+    </script>
+</body>
+</html>
