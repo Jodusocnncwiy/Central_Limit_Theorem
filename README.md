@@ -1,7 +1,3 @@
-我將為您更新 `README.md`，將方法二改為直接引導大眾點擊您的 GitHub Pages 線上網址遊玩，讓一般訪客操作更直覺、更方便。
-
-README:README.md
-
 # 📊 Jodus 中央極限定理互動模擬器
 
 歡迎來到 **Jodus 中央極限定理 (Central Limit Theorem, CLT) 互動視覺化模擬器**！
