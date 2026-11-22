@@ -1,453 +1,767 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="zh-Hant-TW">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jodus中央極限定理 (Central Limit Theorem) 互動視覺化模擬器</title>
-    <!-- 引入 Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- 引入 Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- 引入 Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Noto Sans TC', sans-serif;
-            background-color: #f8fafc;
-        }
-        /* 自定義滑桿樣式 */
-        input[type=range] {
-            -webkit-appearance: none;
-            width: 100%;
-            background: transparent;
-        }
-        input[type=range]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            height: 16px;
-            width: 16px;
-            border-radius: 50%;
-            background: #3b82f6;
-            cursor: pointer;
-            margin-top: -6px;
-        }
-        input[type=range]::-webkit-slider-runnable-track {
-            width: 100%;
-            height: 6px;
-            cursor: pointer;
-            background: #cbd5e1;
-            border-radius: 3px;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jodus中央極限定理互動實驗室｜平均起來，為什麼會變成鐘形？</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+<style>
+:root{
+  --bg:#FFFFFF; --wash:#F3F0FF; --line:#DDD8F5; --ink:#0A1045; --ink2:#555B7A; --muted:#7C819C;
+  --blue:#6C4BEF; --blue-soft:#DDD8F5; --coral:#D61FA3; --coral-soft:#F9DCF0;
+  --hilite:#F9E900; --deep:#A3127B; --good:#2E9D63; --r:10px;
+}
+*{box-sizing:border-box}
+html{font-size:16px}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;line-height:1.65;font-variant-numeric:tabular-nums}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+
+/* ---------- 頁首 ---------- */
+header.top{padding:22px clamp(16px,4vw,40px) 0;max-width:1320px;margin:0 auto}
+.brand{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 18px}
+.brand h1{margin:0;font-size:clamp(1.5rem,2.6vw,2.1rem);font-weight:900;letter-spacing:.02em}
+.brand p{margin:0;color:var(--ink2);font-size:.98rem}
+nav.tabs{max-width:1320px;margin:16px auto 0;padding:0 clamp(16px,4vw,40px);display:flex;gap:4px;overflow-x:auto;border-bottom:2px solid var(--line);scrollbar-width:thin}
+nav.tabs button{flex:0 0 auto;border:0;background:none;padding:10px 16px 12px;font-size:1rem;font-weight:500;color:var(--ink2);cursor:pointer;border-bottom:4px solid transparent;margin-bottom:-2px;border-radius:8px 8px 0 0}
+nav.tabs button .n{display:inline-grid;place-items:center;width:1.5em;height:1.5em;border-radius:50%;background:var(--wash);color:var(--blue);font-size:.82em;font-weight:700;margin-right:6px}
+nav.tabs button:hover{background:var(--wash)}
+nav.tabs button[aria-selected="true"]{color:var(--ink);font-weight:700;border-bottom-color:var(--blue)}
+nav.tabs button[aria-selected="true"] .n{background:var(--blue);color:#fff}
+
+/* ---------- 主版面 ---------- */
+main{max-width:1320px;margin:0 auto;padding:18px clamp(16px,4vw,40px) 40px;display:grid;grid-template-columns:minmax(0,1.35fr) minmax(320px,1fr);gap:24px;align-items:start}
+main.full{grid-template-columns:1fr}
+main.full .stage{display:none}
+.stage{position:sticky;top:10px}
+.statbar{display:flex;flex-wrap:wrap;gap:6px 22px;align-items:baseline;padding:10px 14px;background:var(--wash);border-radius:var(--r) var(--r) 0 0;font-size:.95rem}
+.statbar .lbl{color:var(--muted);font-size:.85rem;margin-right:4px}
+.statbar .big{font-size:1.15rem;font-weight:700}
+.statbar .big.b{color:#4B32B8}
+.chartwrap{border:1px solid var(--line);border-top:0;border-radius:0 0 var(--r) var(--r);background:#fff;position:relative}
+svg#chart text{paint-order:stroke;stroke:#fff;stroke-width:4px;stroke-linejoin:round}
+svg#chart{display:block;width:100%;height:auto;user-select:none}
+.toolbar{padding-top:8px;display:flex;flex-direction:column;gap:6px}
+.trow{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;font-size:.92rem}
+.trow .tl{font-weight:700;color:var(--ink2);margin-right:4px}
+.nwrap{display:flex;align-items:center;gap:8px;flex:1 1 260px;min-width:220px}
+.nwrap input{flex:1}
+.npill{background:var(--hilite);color:var(--ink);font-weight:900;border-radius:999px;padding:0 14px;white-space:nowrap}
+
+/* ---------- 按鈕與控制項 ---------- */
+.btn{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:6px 14px;cursor:pointer;font-size:.92rem;min-height:38px}
+.btn:hover{border-color:var(--blue);color:var(--blue)}
+.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:700}
+.btn.primary:hover{filter:brightness(1.08);color:#fff}
+.btn.coral{background:var(--coral);border-color:var(--coral);color:#fff;font-weight:700}
+.btn.coral:hover{color:#fff;filter:brightness(1.08)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.pop[aria-pressed="true"]{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:700}
+.btn.tog[aria-pressed="true"]{background:var(--coral-soft);border-color:var(--coral);color:#A3127B;font-weight:700}
+.btn.sm{min-height:32px;padding:2px 10px}
+label.chk{display:inline-flex;gap:8px;align-items:center;cursor:pointer;font-size:.95rem;padding:3px 0;margin-right:14px}
+label.chk input{width:18px;height:18px;accent-color:var(--blue)}
+input[type=range]{width:100%;accent-color:var(--coral);height:28px}
+.btnrow{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+
+/* ---------- 側欄 ---------- */
+.panel{display:none}
+.panel.on{display:block}
+.panel h2{font-size:1.35rem;margin:0 0 6px;font-weight:900}
+.panel h3{font-size:1.05rem;margin:22px 0 6px;font-weight:700}
+.panel p{margin:6px 0}
+.lead{color:var(--ink2)}
+.box{border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;margin:12px 0;background:#fff}
+.box.wash{background:var(--wash);border-color:transparent}
+.box.try{border-left:5px solid var(--coral)}
+.box.try h3{margin-top:0}
+.box.try ol{margin:4px 0;padding-left:1.3em}
+.box.try li{margin:3px 0}
+.num{font-weight:700}
+.c-blue{color:#4B32B8} .c-coral{color:#A3127B} .c-grey{color:var(--ink2)}
+.feedback{font-weight:700;margin-top:6px;min-height:1.6em}
+.feedback.ok{color:var(--good)}
+details.grad{margin:18px 0;border:1.5px dashed #B9AEF5;border-radius:var(--r);padding:4px 14px;background:#FBFAFF}
+details.grad summary{cursor:pointer;font-weight:700;padding:8px 0;color:#4B32B8}
+details.grad[open]{padding-bottom:12px}
+details.fold{margin:12px 0;border:1px solid var(--line);border-radius:var(--r);padding:2px 14px}
+details.fold summary{cursor:pointer;font-weight:700;padding:8px 0;color:var(--ink2)}
+details.fold[open]{padding-bottom:12px}
+table.cmp{border-collapse:collapse;width:100%;font-size:.95rem;margin:6px 0}
+table.cmp th,table.cmp td{border-bottom:1px solid var(--line);padding:5px 8px;text-align:right}
+table.cmp th:first-child,table.cmp td:first-child{text-align:left}
+table.cmp thead th{background:var(--wash);color:var(--ink2);font-weight:700}
+table.cmp tr.hl td{background:#FDF0F9}
+.vals{font-size:.88rem;color:var(--ink2);word-break:break-all;max-height:160px;overflow:auto}
+.guess{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0}
+.guess button{border:1.5px solid var(--line);background:#fff;border-radius:10px;padding:8px;cursor:pointer;text-align:left;font-size:.92rem;line-height:1.4}
+.guess button:hover{border-color:var(--blue)}
+.guess button[aria-pressed="true"]{border-color:var(--coral);background:#FDF0F9;box-shadow:0 0 0 2px var(--coral) inset}
+.guess svg{display:block;width:100%;height:auto;margin-bottom:4px}
+.guess b{color:var(--blue);margin-right:4px}
+.cards{display:grid;grid-template-columns:1fr;gap:8px}
+.card{border:1px solid var(--line);border-radius:var(--r);padding:8px 12px}
+.card b.L{display:inline-grid;place-items:center;width:1.6em;height:1.6em;border-radius:50%;background:var(--blue);color:#fff;margin-right:8px;font-size:.9em}
+.card p{margin:2px 0 0}
+.myth{border-left:5px solid var(--coral);background:#FDF0F9;border-radius:var(--r);padding:8px 12px;margin:8px 0}
+.myth .x{color:#A3127B;font-weight:900;margin-right:6px}
+.myth p{margin:2px 0 0}
+
+/* ---------- 自測 ---------- */
+.quiz{max-width:860px}
+.q{border:1px solid var(--line);border-radius:var(--r);padding:16px 18px;margin:14px 0}
+.q h3{margin:0 0 10px;font-size:1.05rem}
+.q .opts{display:grid;gap:6px}
+.q .opts button{text-align:left;border:1.5px solid var(--line);background:#fff;border-radius:10px;padding:10px 14px;cursor:pointer;font-size:.98rem;line-height:1.5}
+.q .opts button:hover{border-color:var(--blue)}
+.q .opts button.right{border-color:var(--good);background:#E7F6EE}
+.q .opts button.wrong{border-color:var(--coral);background:var(--coral-soft)}
+.q .exp{display:none;margin-top:10px;padding:10px 14px;background:var(--wash);border-radius:8px}
+.q .exp.on{display:block}
+.score{font-size:1.1rem;font-weight:700;margin:10px 0}
+.qfoot{display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+footer{max-width:1320px;margin:0 auto;padding:0 clamp(16px,4vw,40px) 30px;color:var(--muted);font-size:.85rem}
+
+/* ================= 16:9 投影畫布模式 ================= */
+body.stage{overflow:hidden;background:#E4DFF6;height:100vh;font-size:1rem}
+body.stage #app{position:absolute;left:0;top:0;width:1920px;height:1080px;transform-origin:0 0;background:var(--bg);display:flex;flex-direction:column;overflow:hidden;box-shadow:0 0 0 1px #D3CCF2}
+body.stage label.chk input{width:22px;height:22px}
+body.stage header.top{max-width:none;margin:0;padding:16px 40px 0;display:flex;align-items:flex-end;gap:20px;border-bottom:2px solid var(--line)}
+body.stage .brand{flex-direction:column;gap:0;padding-bottom:12px;flex:0 0 auto}
+body.stage .brand h1{font-size:34px;line-height:1.15}
+body.stage .brand p{font-size:18px}
+body.stage nav.tabs{margin:0;padding:0;border-bottom:0;flex:1 1 auto;overflow:visible;gap:0}
+body.stage nav.tabs button{font-size:20px;padding:10px 14px 12px}
+body.stage .fsbtn{flex:0 0 auto;margin-bottom:12px;font-size:18px}
+body.stage main{max-width:none;margin:0;flex:1 1 auto;min-height:0;padding:16px 40px 8px;grid-template-columns:1120px 1fr;gap:36px;align-items:stretch}
+body.stage main.full{grid-template-columns:1fr}
+body.stage .stage{position:static;display:flex;flex-direction:column;min-height:0}
+body.stage main.full .stage{display:none}
+body.stage .statbar{font-size:20px;padding:8px 18px;gap:4px 26px}
+body.stage .statbar .lbl{font-size:17px}
+body.stage .statbar .big{font-size:28px}
+body.stage .chartwrap{flex:1 1 auto;min-height:0;display:flex}
+body.stage svg#chart{width:100%;height:100%}
+body.stage .trow{font-size:17px}
+body.stage .toolbar .btn{font-size:16px;min-height:34px;padding:2px 12px}
+body.stage .side{min-height:0;overflow-y:auto;padding-right:14px;scrollbar-width:thin}
+body.stage .panel h2{font-size:34px;line-height:1.3}
+body.stage .panel h3{font-size:24px;margin-top:18px}
+body.stage .btn{font-size:19px;min-height:44px}
+body.stage .lead,body.stage .panel p{line-height:1.6}
+body.stage table.cmp{font-size:20px}
+body.stage .vals{font-size:17px}
+body.stage .guess button{font-size:18px}
+body.stage .card,body.stage .myth{font-size:20px}
+body.stage input[type=range]{height:34px}
+body.stage footer{max-width:none;margin:0;padding:0 40px 8px;font-size:15px}
+body.stage .quiz{max-width:none;height:100%;overflow-y:auto}
+body.stage #quizBox{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0 22px;align-items:start}
+body.stage .q h3{font-size:21px}
+body.stage .q .opts button{font-size:18px;padding:5px 12px}
+body.stage .quiz h2{font-size:30px}
+body.stage .quiz .lead{margin:0 0 4px}
+body.stage .q .exp{margin-top:8px;padding:8px 12px;line-height:1.5;font-size:17px}
+body.stage .q{margin:6px 0;padding:12px 16px}
+body.stage .qfoot .score{margin:4px 0}
+body.stage main.full .side{overflow:visible}
+body:not(.stage) .fsbtn{display:none}
+[hidden]{display:none!important}
+
+@media (max-width:900px){
+  main{grid-template-columns:1fr}
+  .stage{position:static}
+  .guess{grid-template-columns:1fr 1fr}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
 </head>
-<body class="text-slate-800">
+<body>
+<div id="app">
+<header class="top">
+  <div class="brand">
+    <h1>Jodus中央極限定理互動實驗室</h1>
+    <p>超商消費金額明明很偏，平均起來為什麼會變成鐘形？</p>
+  </div>
+  <nav class="tabs" role="tablist" aria-label="單元步驟">
+    <button role="tab" data-tab="1" aria-selected="true"><span class="n">1</span>先猜一猜</button>
+    <button role="tab" data-tab="2" aria-selected="false"><span class="n">2</span>一次抽樣</button>
+    <button role="tab" data-tab="3" aria-selected="false"><span class="n">3</span>抽樣分配</button>
+    <button role="tab" data-tab="4" aria-selected="false"><span class="n">4</span>n 的影響</button>
+    <button role="tab" data-tab="5" aria-selected="false"><span class="n">5</span>條件與迷思</button>
+    <button role="tab" data-tab="6" aria-selected="false"><span class="n">6</span>自我檢測</button>
+  </nav>
+  <button class="btn fsbtn" id="fsBtn" title="全螢幕（F 鍵）">全螢幕</button>
+</header>
 
-    <nav class="bg-blue-600 text-white p-4 shadow-md">
-        <div class="max-w-7xl mx-auto px-4 flex items-center justify-between">
-            <h1 class="text-2xl font-bold">Jodus中央極限定理 (Central Limit Theorem)</h1>
-        </div>
-    </nav>
+<main id="main">
+  <!-- ===== 圖表區 ===== -->
+  <section class="stage" aria-label="模擬圖表">
+    <div class="statbar" id="statbar"></div>
+    <div class="chartwrap">
+      <svg id="chart" viewBox="0 0 1100 760" role="img" aria-label="母體分配與樣本平均數分配">
+        <defs>
+          <clipPath id="clipTop"><rect x="86" y="40" width="980" height="224"/></clipPath>
+          <clipPath id="clipBot"><rect x="86" y="356" width="980" height="326"/></clipPath>
+        </defs>
+        <g id="layer"></g>
+      </svg>
+    </div>
+    <div class="toolbar">
+      <div class="trow" id="rowPop">
+        <span class="tl">母體</span>
+        <button class="btn pop" data-pop="normal">手搖飲容量（常態）</button>
+        <button class="btn pop" data-pop="uniform">公車等候（均勻）</button>
+        <button class="btn pop" data-pop="exp">超商消費（右偏）</button>
+        <button class="btn pop" data-pop="bimodal">外送時間（雙峰）</button>
+        <button class="btn pop" data-pop="lognorm">網購訂單（極端右偏）</button>
+      </div>
+      <div class="trow" id="rowN">
+        <span class="tl">每組樣本數</span>
+        <span class="nwrap"><input type="range" id="nSlider" min="0" step="1" aria-label="每組樣本數 n"><output id="nOut" class="npill">n = 10</output></span>
+        <button class="btn sm" data-n="1">1</button><button class="btn sm" data-n="2">2</button><button class="btn sm" data-n="5">5</button>
+        <button class="btn sm" data-n="10">10</button><button class="btn sm" data-n="30">30</button><button class="btn sm" data-n="100">100</button>
+      </div>
+      <div class="trow" id="rowView">
+        <span class="tl">顯示</span>
+        <label class="chk"><input type="checkbox" id="showCurve" checked> 理論常態曲線</label>
+        <label class="chk"><input type="checkbox" id="fixAxis"> 下圖固定為母體尺度（看寬度變化）</label>
+      </div>
+      <div class="trow" id="rowView4" hidden>
+        <span class="tl">顯示</span>
+        <label class="chk"><input type="checkbox" id="zoom4"> 每張小圖各自放大（看形狀）</label>
+        <span style="color:var(--ink2)">不勾：6 張圖用同一個尺度（看寬度）</span>
+      </div>
+    </div>
+  </section>
 
-    <div class="max-w-7xl mx-auto px-4 py-8">
-        
-        <div class="bg-white rounded-xl shadow-sm p-6 mb-8 border border-slate-200">
-            <h2 class="text-xl font-semibold mb-2 text-blue-700">什麼是中央極限定理？</h2>
-            <p class="text-slate-600 leading-relaxed">
-                中央極限定理告訴我們：從任何一個母體（不論其形狀是均勻、偏態還是雙峰）中，隨機抽取大小為 <strong class="text-slate-800">n</strong> 的樣本。當 <strong class="text-slate-800">n</strong> 夠大時（通常 n ≥ 30），這些「樣本平均數」的分佈將會趨近於一個<strong>常態分配 (Normal Distribution，即鐘形曲線)</strong>。
-                <br>其理論樣本平均數期望值維持不變：<code class="bg-slate-100 px-1.5 py-0.5 rounded text-blue-800 font-mono">μ<sub>x̄</sub> = μ</code>，而理論標準差（標準誤）則為：<code class="bg-slate-100 px-1.5 py-0.5 rounded text-blue-800 font-mono">σ<sub>x̄</sub> = σ / √n</code>。
-                <br>這就是為什麼常態分配在統計學中如此重要，因為它讓我們能在不知道母體真實形狀的情況下，仍能進行推論！
-            </p>
-        </div>
+  <!-- ===== 側欄 ===== -->
+  <section class="side">
 
-        <div class="flex flex-col lg:flex-row gap-8 items-stretch">
-            
-            <!-- 左側：控制面板 (使用 h-full 與 flex 確保與右側等高對齊) -->
-            <div class="w-full lg:w-1/3 flex flex-col">
-                <div class="bg-white rounded-xl shadow-sm p-6 border border-slate-200 flex-1 flex flex-col justify-between">
-                    <div>
-                        <h3 class="text-lg font-bold mb-4 border-b pb-2">設定與操作</h3>
-                        
-                        <!-- 母體分佈選擇 -->
-                        <div class="mb-5">
-                            <label class="block text-sm font-medium text-slate-700 mb-2">1. 選擇母體分佈 (Population Distribution)</label>
-                            <select id="distSelect" class="w-full bg-slate-50 border border-slate-300 text-slate-900 rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none transition-colors">
-                                <option value="normal">常態分配 (Normal)</option>
-                                <option value="uniform">均勻分配 (Uniform)</option>
-                                <option value="exponential">指數分配 (Exponential/偏態)</option>
-                                <option value="bimodal">雙峰分配 (Bimodal)</option>
-                            </select>
-                        </div>
+    <!-- ---------- 1 ---------- -->
+    <div class="panel on" data-panel="1">
+      <h2>先猜一猜：平均數會長什麼樣子？</h2>
+      <p class="lead">左上圖是巷口超商「每位顧客單筆消費金額」的分配。多數人只買一瓶飲料或一個麵包，花幾十元；少數人一次採買好幾百元，形成拖在右邊的長尾巴，這叫做<strong>右偏</strong>。</p>
+      <p class="box wash">母體平均數 <span class="num">μ = 120 元</span>，母體標準差 <span class="num">σ = 120 元</span>。</p>
 
-                        <!-- 樣本大小滑桿 -->
-                        <div class="mb-5">
-                            <label class="block text-sm font-medium text-slate-700 mb-2">
-                                2. 每次抽樣的樣本數 (Sample Size, n): <span id="sampleSizeDisplay" class="text-blue-600 font-bold text-lg">30</span>
-                            </label>
-                            <input type="range" id="sampleSizeSlider" min="10" max="200" value="30" class="w-full">
-                            <p class="text-xs text-slate-500 mt-1">每次從母體中抽出 n 個數據，並計算其平均值。</p>
-                        </div>
+      <div class="box try">
+        <h3>你的預測</h3>
+        <p>每次隨機抽 <strong>30 位</strong>顧客，算出他們的平均消費 x̄。重複 1,000 次，把 1,000 個 x̄ 畫成直方圖，會比較像哪一個？（橫軸都是 0～600 元）</p>
+        <div class="guess" id="guessBox"></div>
+        <p class="feedback" id="guessFb"></p>
+        <p id="guessNext" hidden><button class="btn primary" id="go2">到第 2 頁自己抽抽看</button> <button class="btn" id="go4">直接看答案（第 4 頁）</button></p>
+      </div>
 
-                        <!-- 抽樣按鈕 -->
-                        <div class="mb-5">
-                            <label class="block text-sm font-medium text-slate-700 mb-2">3. 重複抽樣次數 (Draw Samples)</label>
-                            <div class="grid grid-cols-2 gap-2 mb-2">
-                                <button onclick="drawSamples(1)" class="bg-blue-100 hover:bg-blue-200 text-blue-700 font-semibold py-2 px-4 rounded transition-colors text-sm">抽樣 1 次</button>
-                                <button onclick="drawSamples(10)" class="bg-blue-200 hover:bg-blue-300 text-blue-800 font-semibold py-2 px-4 rounded transition-colors text-sm">抽樣 10 次</button>
-                                <button onclick="drawSamples(100)" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded transition-colors text-sm">抽樣 100 次</button>
-                                <button onclick="drawSamples(1000)" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded transition-colors text-sm">抽樣 1000 次</button>
-                            </div>
-                            <button onclick="drawSamples(10000)" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded transition-colors text-sm mb-2 shadow-sm">
-                                快速抽樣 10,000 次
-                            </button>
-                            <button onclick="resetExperiment()" class="w-full bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-2 px-4 rounded transition-colors text-sm">
-                                清除所有抽樣資料 (Reset)
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- 統計數據面板 -->
-                    <div class="bg-slate-50 p-4 rounded-lg border border-slate-200 mt-4">
-                        <h4 class="text-sm font-bold text-slate-700 mb-2">統計摘要</h4>
-                        <div class="text-sm space-y-1 text-slate-600">
-                            <p>已抽取樣本次數: <span id="totalDrawsDisplay" class="font-bold text-slate-900">0</span></p>
-                            <div class="my-2 border-t border-slate-300"></div>
-                            <p class="text-xs font-semibold text-slate-500">理論值 (母體)</p>
-                            <p>平均數 (μ): <span id="popMeanDisplay" class="font-bold text-slate-900">--</span></p>
-                            <p>標準差 (σ): <span id="popStdDisplay" class="font-bold text-slate-900">--</span></p>
-                            <div class="my-2 border-t border-slate-300"></div>
-                            <p class="text-xs font-semibold text-blue-500">實驗值 (樣本平均數分佈)</p>
-                            <p>平均數: <span id="sampleMeanDisplay" class="font-bold text-blue-700">--</span></p>
-                            <p>標準差: <span id="sampleStdDisplay" class="font-bold text-blue-700">--</span></p>
-                            <p>理論標準誤 (σ/√n): <span id="theoreticalStdErrDisplay" class="font-bold text-slate-900">--</span></p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="w-full lg:w-2/3 flex flex-col justify-between space-y-6">
-                
-                <!-- 母體分佈圖 -->
-                <div class="bg-white rounded-xl shadow-sm p-4 border border-slate-200 flex-1">
-                    <h3 class="text-center font-bold text-slate-700 mb-2">母體分佈形狀 (Population Distribution)</h3>
-                    <div class="relative h-48 w-full">
-                        <canvas id="populationChart"></canvas>
-                    </div>
-                </div>
-
-                <!-- 樣本平均數分佈圖 (直方圖) -->
-                <div class="bg-white rounded-xl shadow-sm p-4 border border-slate-200 flex-1">
-                    <div class="flex justify-between items-center mb-2">
-                        <h3 class="font-bold text-blue-700">樣本平均數的分佈 (Distribution of Sample Means)</h3>
-                        <div class="flex items-center space-x-2 text-sm">
-                            <input type="checkbox" id="showCurve" class="rounded text-blue-600 focus:ring-blue-500" checked onchange="updateSampleChart()">
-                            <label for="showCurve" class="text-slate-600 cursor-pointer">顯示理論常態曲線</label>
-                        </div>
-                    </div>
-                    <div class="relative h-72 w-full">
-                        <canvas id="sampleChart"></canvas>
-                    </div>
-                </div>
-
-            </div>
-        </div>
+      <div class="box try">
+        <h3>動手試試</h3>
+        <ol>
+          <li>在左上圖找出大多數顧客落在哪個金額區間，再對照紫色虛線 μ = 120 元：平均數被右邊少數的大額顧客往右拉了。</li>
+          <li>想一想：30 位顧客的平均消費，有可能高達 500 元嗎？要發生什麼事才會這樣？</li>
+          <li>憑直覺選就好，猜錯很正常，很多人第一次都選 A。</li>
+        </ol>
+      </div>
     </div>
 
-    <script>
-        // ----------------- 核心狀態變數 -----------------
-        let currentDist = 'normal';
-        let sampleSize = 30; // 預設初值設為 30
-        let sampleMeans = []; // 儲存所有抽出的樣本平均數
-        
-        // 圖表實例
-        let popChartInstance = null;
-        let sampleChartInstance = null;
+    <!-- ---------- 2 ---------- -->
+    <div class="panel" data-panel="2">
+      <h2>一次抽樣：n 個值變成 1 個 x̄</h2>
+      <p class="lead">按「抽 1 組」：從母體隨機抽出 n 個值（上圖<span class="c-coral num">桃紅色的點</span>），算出平均數 x̄（<span class="c-coral num">桃紅色直線</span>），這個 x̄ 就會落進下圖的直方圖。</p>
+      <div class="btnrow">
+        <button class="btn coral" id="draw1">抽 1 組（慢動作）</button>
+        <button class="btn" id="draw10">抽 10 組</button>
+        <button class="btn tog" id="autoBtn" aria-pressed="false">自動連續抽</button>
+        <button class="btn" data-act="reset">清除重來</button>
+      </div>
+      <div class="box wash num" id="curInfo">還沒有抽樣。</div>
+      <details class="fold"><summary>看這一組的全部數值</summary><div class="vals" id="curVals">—</div></details>
+      <p style="text-align:center">$$\bar{x}=\frac{1}{n}\sum_{i=1}^{n}x_i$$</p>
+      <p>每抽一組，就得到一個 x̄。每組抽到的人不一樣，x̄ 也就不一樣，這叫做<strong>抽樣變異</strong>。把所有可能的 x̄ 畫成分配，就是 x̄ 的<strong>抽樣分配</strong>（sampling distribution）。</p>
 
-        // X軸範圍固定為 0 到 100，便於直觀比較
-        const X_MIN = 0;
-        const X_MAX = 100;
-        const NUM_BINS = 50; 
-        const BIN_WIDTH = (X_MAX - X_MIN) / NUM_BINS;
+      <div class="box try">
+        <h3>動手試試</h3>
+        <ol>
+          <li>用「超商消費」抽幾組：桃紅色的點常常散得很開，但 x̄ 都比較靠近中間，因為大額和小額的顧客會互相抵銷。</li>
+          <li>把 n 改成 1 再自動連續抽：x̄ 就是那一個值本身，下圖會慢慢長得和母體一樣。</li>
+          <li>把 n 拉到 100：x̄ 幾乎都擠在 μ 附近，很難抽到極端的平均。</li>
+        </ol>
+      </div>
+    </div>
 
-        // ----------------- 數學與統計函數 -----------------
+    <!-- ---------- 3 ---------- -->
+    <div class="panel" data-panel="3">
+      <h2>抽很多組：抽樣分配現形</h2>
+      <p class="lead">一組一組抽太慢，直接抽幾千組，看 x̄ 直方圖的形狀，再和<span class="c-blue num">紫色的理論常態曲線</span>比一比。</p>
+      <div class="btnrow">
+        <button class="btn" data-k="100">抽 100 組</button>
+        <button class="btn" data-k="1000">抽 1,000 組</button>
+        <button class="btn coral" data-k="10000">抽 10,000 組</button>
+        <button class="btn" data-act="reset">清除重來</button>
+        <button class="btn" data-act="reseed">換一批亂數</button>
+      </div>
 
-        // 母體參數設定
-        const distParams = {
-            normal: {
-                mean: 50,
-                std: 15,
-                generate: () => {
-                    // Box-Muller transform
-                    let u = 0, v = 0;
-                    while(u === 0) u = Math.random();
-                    while(v === 0) v = Math.random();
-                    let num = Math.sqrt( -2.0 * Math.log( u ) ) * Math.cos( 2.0 * Math.PI * v );
-                    return (num * 15) + 50;
-                },
-                pdf: (x) => normalPdf(x, 50, 15)
-            },
-            uniform: {
-                mean: 50,
-                std: Math.sqrt(Math.pow(100, 2) / 12), // 約 28.867
-                generate: () => Math.random() * 100,
-                pdf: (x) => (x >= 0 && x <= 100) ? 1/100 : 0
-            },
-            exponential: {
-                mean: 20,
-                std: 20,
-                // Inverse transform sampling
-                generate: () => -Math.log(1.0 - Math.random()) * 20,
-                pdf: (x) => (x >= 0) ? (1/20) * Math.exp(-x/20) : 0
-            },
-            bimodal: {
-                mean: 50,
-                // 兩個常態 N(25, 10) 和 N(75, 10) 混合，各佔 50%
-                std: 25,
-                generate: () => {
-                    let u = 0, v = 0;
-                    while(u === 0) u = Math.random();
-                    while(v === 0) v = Math.random();
-                    let num = Math.sqrt( -2.0 * Math.log( u ) ) * Math.cos( 2.0 * Math.PI * v );
-                    let isFirstPeak = Math.random() < 0.5;
-                    if(isFirstPeak) return (num * 10) + 25;
-                    else return (num * 10) + 75;
-                },
-                pdf: (x) => 0.5 * normalPdf(x, 25, 10) + 0.5 * normalPdf(x, 75, 10)
-            }
-        };
+      <h3>兩個公式</h3>
+      <p style="text-align:center">$$\mu_{\bar{x}}=\mu\qquad\qquad \sigma_{\bar{x}}=\frac{\sigma}{\sqrt{n}}$$</p>
+      <p>第一個：x̄ 的平均數等於母體平均數，不會系統性地偏高或偏低。第二個：x̄ 的標準差叫做<strong>標準誤</strong>（standard error），n 愈大，x̄ 晃動得愈小。</p>
+      <div class="box wash"><table class="cmp" id="cmp3"></table><p class="lead" style="margin:4px 0 0;font-size:.9em" id="cmp3note"></p></div>
+      <p><strong>中央極限定理</strong>：只要 n 夠大，不論母體是什麼形狀，x̄ 的抽樣分配都會接近常態分配 N(μ, σ²/n)。</p>
 
-        // 常態分配 PDF 函數
-        function normalPdf(x, mean, std) {
-            return (1 / (std * Math.sqrt(2 * Math.PI))) * Math.exp(-0.5 * Math.pow((x - mean) / std, 2));
-        }
+      <div class="box try">
+        <h3>動手試試</h3>
+        <ol>
+          <li>選「超商消費」、n = 30，抽 10,000 組：直方圖接近鐘形，實驗的標準差也很接近 σ/√n。</li>
+          <li>勾選下方的「固定為母體尺度」：在母體的尺度下，x̄ 的分配窄了一大截。</li>
+          <li>換成「外送時間（雙峰）」：母體有兩個峰，x̄ 的分配卻只有一個峰。</li>
+        </ol>
+      </div>
 
-        // 計算陣列平均數
-        function calcMean(arr) {
-            if(arr.length === 0) return 0;
-            return arr.reduce((a, b) => a + b, 0) / arr.length;
-        }
+      <details class="grad">
+        <summary>研究所延伸：為什麼是 σ/√n？標準差和標準誤有什麼不同？</summary>
+        <p>若 x₁, …, xₙ 彼此獨立、變異數都是 σ²：</p>
+        <p style="text-align:center">$$\operatorname{Var}(\bar{x})=\frac{1}{n^2}\operatorname{Var}\Big(\sum x_i\Big)=\frac{1}{n^2}\cdot n\sigma^2=\frac{\sigma^2}{n}$$</p>
+        <p>「獨立」是關鍵：若觀察值彼此正相關（例如同一個家庭的多位成員），變異數不會這樣縮小，實際的標準誤會比 σ/√n 大。</p>
+        <p><strong>有限母體</strong>：不放回抽樣且 n／N 超過約 5% 時，要乘上有限母體校正因子：$\sigma_{\bar{x}}=\frac{\sigma}{\sqrt{n}}\sqrt{\frac{N-n}{N-1}}$。</p>
+        <p><strong>標準差 vs. 標準誤</strong>：標準差 s 描述「個別資料」的分散；標準誤描述「統計量（如 x̄）」在重複抽樣下的分散。實務上 σ 未知，以 s/√n 估計標準誤，這也是後面 t 分配登場的原因。</p>
+      </details>
+    </div>
 
-        // 計算陣列標準差 (樣本標準差)
-        function calcStd(arr, mean) {
-            if(arr.length < 2) return 0;
-            let sumSq = arr.reduce((a, b) => a + Math.pow(b - mean, 2), 0);
-            return Math.sqrt(sumSq / (arr.length - 1));
-        }
+    <!-- ---------- 4 ---------- -->
+    <div class="panel" data-panel="4">
+      <h2>n 愈大：形狀愈像常態，寬度依 √n 縮小</h2>
+      <p class="lead">左圖是同一個母體，在 6 種樣本數下各抽 2,000 組的 x̄ 直方圖；<span class="c-blue num">紫色曲線</span>是理論常態曲線 N(μ, σ²/n)。</p>
+      <div class="box try" id="reveal4"></div>
 
-        // 將數據分箱 (Histogram Binning)
-        function createHistogramData(data) {
-            let bins = new Array(NUM_BINS).fill(0);
-            for (let val of data) {
-                if (val < X_MIN || val > X_MAX) continue; // 忽略極端值以保持圖表整潔
-                let index = Math.floor((val - X_MIN) / BIN_WIDTH);
-                if (index === NUM_BINS) index--; // 處理剛好等於最大值的邊界情況
-                bins[index]++;
-            }
-            return bins;
-        }
+      <h3>寬度與形狀，一張表看完</h3>
+      <table class="cmp" id="tab4"></table>
+      <p>n 變成 4 倍，標準誤才減半。想把抽樣誤差砍一半，樣本要多收 3 倍，這也是問卷調查「樣本愈多愈好，但效益遞減」的原因。</p>
+      <p>偏態（skewness）衡量不對稱的程度，0 表示左右對稱。x̄ 的偏態大約是母體偏態 γ 的 1/√n，所以母體愈偏，需要的 n 愈大。</p>
 
-        
-        // DOM 元素載入後初始化
-        document.addEventListener('DOMContentLoaded', () => {
-            initCharts();
-            updateUI();
+      <div class="box try">
+        <h3>動手試試</h3>
+        <ol>
+          <li>換成「公車等候（均勻）」：n = 2 就變成三角形，n = 5 已經很像鐘形。</li>
+          <li>換成「網購訂單（極端右偏）」：n = 30 那張還明顯右偏，看看表格中的偏態。</li>
+          <li>勾選「各自放大」比較形狀；不勾則比較寬度，兩種看法交替切換。</li>
+        </ol>
+      </div>
 
-            // 監聽母體下拉選單
-            document.getElementById('distSelect').addEventListener('change', (e) => {
-                currentDist = e.target.value;
-                resetExperiment();
-            });
+      <details class="grad">
+        <summary>研究所延伸：偏態與峰態以多快的速度消失？</summary>
+        <p>對獨立同分配的樣本，x̄ 的偏態與超額峰態分別為：</p>
+        <p style="text-align:center">$$\gamma_{\bar{x}}=\frac{\gamma}{\sqrt{n}},\qquad \kappa_{\bar{x}}=\frac{\kappa}{n}$$</p>
+        <p>峰態以 1/n 的速度消失，比偏態的 1/√n 快，所以實務上「偏態」才是決定 n 要多大的主要因素。雙峰的外送時間母體是對稱的（γ = 0），只有峰態要消失，因此很快就像常態。</p>
+      </details>
+    </div>
 
-            // 監聽樣本大小滑桿
-            document.getElementById('sampleSizeSlider').addEventListener('input', (e) => {
-                sampleSize = parseInt(e.target.value);
-                document.getElementById('sampleSizeDisplay').innerText = sampleSize;
-                resetExperiment(); // 改變樣本大小需重置實驗
-            });
-        });
+    <!-- ---------- 5 ---------- -->
+    <div class="panel" data-panel="5">
+      <h2>什麼時候可以用中央極限定理？</h2>
+      <p class="lead">中央極限定理不是魔法，它有使用條件。用「網購訂單金額」這個極端右偏的母體（大多數訂單幾百元，偶爾有人一次下單數萬元）來測試。</p>
+      <div class="btnrow">
+        <button class="btn primary" id="drawCur5">用目前設定抽 10,000 組</button>
+        <button class="btn" data-act="reset">清除重來</button>
+      </div>
+      <p class="lead" style="margin:0">或直接套用示範：</p>
+      <div class="btnrow">
+        <button class="btn coral" data-demo="30">網購訂單｜n = 30，抽 10,000 組</button>
+        <button class="btn" data-demo="300">網購訂單｜n = 300，抽 10,000 組</button>
+        <button class="btn" data-demo="exp30">對照：超商消費｜n = 30</button>
+      </div>
+      <p class="box wash num" id="skew5"></p>
 
-        function resetExperiment() {
-            sampleMeans = [];
-            updateUI();
-            updatePopulationChart();
-            updateSampleChart();
-        }
+      <h3>三個條件</h3>
+      <div class="cards">
+        <div class="card"><b class="L">1</b><strong>隨機且獨立</strong><p>觀察值要隨機抽出、彼此獨立。不放回抽樣時，樣本最好不超過母體的 10%。</p></div>
+        <div class="card"><b class="L">2</b><strong>母體變異數有限</strong><p>母體不能有「大到沒有上限」的極端值，否則 σ 不存在，σ/√n 也就沒有意義。</p></div>
+        <div class="card"><b class="L">3</b><strong>n 要夠大，多大要看母體多偏</strong><p>常態母體 n = 1 就夠；對稱母體 n 約 5～10；一般右偏約 30；極端右偏可能要好幾百以上。</p></div>
+      </div>
 
-        function updateUI() {
-            let p = distParams[currentDist];
-            document.getElementById('popMeanDisplay').innerText = p.mean.toFixed(2);
-            document.getElementById('popStdDisplay').innerText = p.std.toFixed(2);
-            document.getElementById('totalDrawsDisplay').innerText = sampleMeans.length.toLocaleString();
-            
-            let theoStdErr = p.std / Math.sqrt(sampleSize);
-            document.getElementById('theoreticalStdErrDisplay').innerText = theoStdErr.toFixed(2);
+      <h3>三個常見迷思</h3>
+      <div class="myth"><span class="x">✗</span><strong>「n 夠大，樣本資料就會變成常態」</strong><p>變成常態的是 x̄ 的<strong>抽樣分配</strong>，不是資料本身。抽 500 位超商顧客，這 500 筆消費金額畫出來仍然右偏。</p></div>
+      <div class="myth"><span class="x">✗</span><strong>「n ≥ 30 就一定沒問題」</strong><p>30 只是經驗法則。按上面第一個按鈕：極端右偏時，n = 30 的 x̄ 分配仍明顯右偏。</p></div>
+      <div class="myth"><span class="x">✗</span><strong>「中央極限定理會讓母體變成常態」</strong><p>母體的形狀從頭到尾都沒變（看上圖），改變的只有 x̄ 的分配。</p></div>
 
-            if(sampleMeans.length > 0) {
-                let sMean = calcMean(sampleMeans);
-                let sStd = calcStd(sampleMeans, sMean);
-                document.getElementById('sampleMeanDisplay').innerText = sMean.toFixed(2);
-                document.getElementById('sampleStdDisplay').innerText = sStd.toFixed(2);
-            } else {
-                document.getElementById('sampleMeanDisplay').innerText = "--";
-                document.getElementById('sampleStdDisplay').innerText = "--";
-            }
-        }
+      <div class="box try">
+        <h3>動手試試</h3>
+        <ol>
+          <li>按「網購訂單｜n = 30」示範：下圖右尾拉得很長，x̄ 的偏態約 2，紫色曲線明顯對不上。</li>
+          <li>再按「n = 300」：偏態降到約 0.6，接近多了，但還不完美。</li>
+          <li>按「對照：超商消費」：同樣 n = 30，偏態只有約 0.4。差別就在母體有多偏。</li>
+        </ol>
+      </div>
 
+      <details class="grad">
+        <summary>研究所延伸：收斂速度與「沒有中央極限定理」的母體</summary>
+        <p><strong>Berry–Esseen 定理</strong>：x̄ 標準化後的累積分配函數和標準常態的最大差距，有上界</p>
+        <p style="text-align:center">$$\sup_z\big|F_n(z)-\Phi(z)\big|\le \frac{C\,\rho}{\sigma^{3}\sqrt{n}},\qquad \rho=E|X-\mu|^{3}$$</p>
+        <p>其中 C 為常數。誤差以 1/√n 的速度縮小，且和母體的三階絕對動差 ρ（大致反映偏態與厚尾）成正比，這就是偏態大的母體需要更大 n 的原因。</p>
+        <p><strong>反例：Cauchy 分配</strong>沒有平均數與變異數，n 個 Cauchy 變數的平均仍是同一個 Cauchy 分配，n 再大也不會變窄、不會趨近常態。所得、房價、網購金額這類厚尾資料，分析前應先檢視分配，必要時取對數、使用中位數或拔靴法（bootstrap）。</p>
+      </details>
+    </div>
 
-        // 執行抽樣
-        function drawSamples(numSamples) {
-            let generator = distParams[currentDist].generate;
-            
-            for (let i = 0; i < numSamples; i++) {
-                let currentSampleSum = 0;
-                for (let j = 0; j < sampleSize; j++) {
-                    currentSampleSum += generator();
-                }
-                let mean = currentSampleSum / sampleSize;
-                sampleMeans.push(mean);
-            }
-            
-            updateSampleChart();
-            updateUI();
-        }
+    <!-- ---------- 6 ---------- -->
+    <div class="panel quiz" data-panel="6">
+      <h2>自我檢測</h2>
+      <p class="lead">選一個答案，馬上就會看到解析。很多人第一次會在第 1、4、5 題選錯，錯了也沒關係，看解析就好。</p>
+      <div id="quizBox"></div>
+      <div class="qfoot"><p class="score" id="score"></p><button class="btn" id="quizReset">重新作答</button></div>
+    </div>
+  </section>
+</main>
 
+<footer>教學用模擬：五個母體（手搖飲容量、公車等候、超商消費、外送時間、網購訂單）的參數為虛構設定，抽樣以固定亂數種子產生，僅供課堂示範。</footer>
+</div>
 
-        // 初始化圖表
-        function initCharts() {
-            // 生成 X 軸標籤 (0, 2, 4 ... 100)
-            const labels = [];
-            for (let i = 0; i < NUM_BINS; i++) {
-                labels.push((X_MIN + i * BIN_WIDTH + BIN_WIDTH/2).toFixed(0));
-            }
+<script>
+(() => {
+"use strict";
+const $=id=>document.getElementById(id);
 
-            // --- 母體圖表 ---
-            const popCtx = document.getElementById('populationChart').getContext('2d');
-            popChartInstance = new Chart(popCtx, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: '機率密度 (Probability Density)',
-                        data: [],
-                        borderColor: 'rgba(71, 85, 105, 1)', // slate-600
-                        backgroundColor: 'rgba(148, 163, 184, 0.2)', // slate-400 with opacity
-                        fill: true,
-                        pointRadius: 0,
-                        tension: 0.4,
-                        borderWidth: 2
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    animation: false,
-                    plugins: { legend: { display: false }, tooltip: { enabled: false } },
-                    scales: {
-                        x: { 
-                            grid: { display: false },
-                            ticks: { maxTicksLimit: 10 }
-                        },
-                        y: { display: false, beginAtZero: true }
-                    }
-                }
-            });
+/* ================= 亂數與母體 ================= */
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return ((t^t>>>14)>>>0)/4294967296;};}
+function gauss(r){let u=0;while(u===0)u=r();const v=r();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+const npdf=(x,m,s)=>Math.exp(-0.5*((x-m)/s)**2)/(s*Math.sqrt(2*Math.PI));
+const LN_M=Math.log(600),LN_S=1.2,E2=Math.exp(LN_S*LN_S);
+const POPS={
+  normal:{name:'手搖飲容量',type:'常態',var:'手搖飲每杯實際容量',unit:'ml',dom:[640,760],dp:2,
+    mu:700,sd:15,skew:0,kurt:0,gen:r=>700+15*gauss(r),pdf:x=>npdf(x,700,15)},
+  uniform:{name:'公車等候',type:'均勻',var:'公車等候時間',unit:'分鐘',dom:[0,20],dp:2,lo:0,
+    mu:10,sd:20/Math.sqrt(12),skew:0,kurt:-1.2,gen:r=>20*r(),pdf:x=>(x>=0&&x<=20)?1/20:0},
+  exp:{name:'超商消費',type:'右偏',var:'超商單筆消費金額',unit:'元',dom:[0,600],dp:1,lo:0,
+    mu:120,sd:120,skew:2,kurt:6,gen:r=>-120*Math.log(1-r()),pdf:x=>x<0?0:Math.exp(-x/120)/120},
+  bimodal:{name:'外送時間',type:'雙峰',var:'外送送達時間',unit:'分鐘',dom:[0,70],dp:2,
+    mu:32.5,sd:Math.sqrt(181.25),skew:0,kurt:null,gen:r=>(r()<0.5?20:45)+5*gauss(r),pdf:x=>0.5*npdf(x,20,5)+0.5*npdf(x,45,5)},
+  lognorm:{name:'網購訂單',type:'極端右偏',var:'網購單筆訂單金額',unit:'元',dom:[0,6000],dp:0,lo:0,
+    mu:600*Math.exp(LN_S*LN_S/2),sd:600*Math.exp(LN_S*LN_S/2)*Math.sqrt(E2-1),skew:(E2+2)*Math.sqrt(E2-1),kurt:E2**4+2*E2**3+3*E2**2-6,
+    gen:r=>Math.exp(LN_M+LN_S*gauss(r)),pdf:x=>x<=0?0:Math.exp(-((Math.log(x)-LN_M)**2)/(2*LN_S*LN_S))/(x*LN_S*Math.sqrt(2*Math.PI))}
+};
+// 雙峰母體的超額峰態（解析值）
+(()=>{const P=POPS.bimodal,m=P.mu;let m4=0;[[20,5],[45,5]].forEach(([a,s])=>{const d=a-m;m4+=0.5*(d**4+6*d*d*s*s+3*s**4);});P.kurt=m4/P.sd**4-3;})();
+const POP_KEYS=Object.keys(POPS);
+const N_LIST=[1,2,3,4,5,6,8,10,12,15,20,25,30,40,50,60,80,100,150,200,300,500];
+const N4=[1,2,5,10,30,100];
 
-            // --- 樣本平均數分佈圖 ---
-            const sampleCtx = document.getElementById('sampleChart').getContext('2d');
-            sampleChartInstance = new Chart(sampleCtx, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [
-                        {
-                            label: '理論常態曲線',
-                            data: [],
-                            type: 'line',
-                            borderColor: 'rgba(239, 68, 68, 1)', // red-500
-                            borderWidth: 2,
-                            pointRadius: 0,
-                            fill: false,
-                            tension: 0.4,
-                            yAxisID: 'y'
-                        },
-                        {
-                            label: '樣本平均數頻率 (次數)',
-                            data: [],
-                            backgroundColor: 'rgba(59, 130, 246, 0.7)', // blue-500
-                            borderColor: 'rgba(37, 99, 235, 1)', // blue-600
-                            borderWidth: 1,
-                            barPercentage: 1.0,
-                            categoryPercentage: 1.0,
-                            yAxisID: 'y'
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    animation: { duration: 200 }, // 給一點小動畫讓抽樣看起來順暢
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        x: { 
-                            grid: { display: false },
-                            ticks: { maxTicksLimit: 10 }
-                        },
-                        y: { 
-                            beginAtZero: true,
-                            title: { display: true, text: '頻率 (次數)' }
-                        }
-                    }
-                }
-            });
+/* ================= 狀態 ================= */
+const st={tab:1,pop:'exp',n:10,means:[],seed:1,rng:null,cur:null,last:null,anim:null,auto:null,guess:null,m4:null};
+function resetSim(){
+  stopAuto();if(st.anim){clearTimeout(st.anim);st.anim=null;}
+  st.rng=mulberry32(st.seed*7919+POP_KEYS.indexOf(st.pop)*104729+st.n*131);
+  st.means=[];st.cur=null;st.last=null;
+}
+function oneGroup(){const P=POPS[st.pop],v=new Array(st.n);let s=0;for(let i=0;i<st.n;i++){v[i]=P.gen(st.rng);s+=v[i];}return {vals:v,mean:s/st.n};}
+function drawMany(k){const P=POPS[st.pop],r=st.rng,n=st.n;let g=null;
+  for(let j=0;j<k;j++){let s=0;for(let i=0;i<n;i++)s+=P.gen(r);st.means.push(s/n);}
+  st.cur=null;st.last=null;render();}
 
-            updatePopulationChart();
-            updateSampleChart();
-        }
+/* ================= 統計工具 ================= */
+function moments(a){const n=a.length;if(!n)return null;let s=0;for(const v of a)s+=v;const m=s/n;let m2=0,m3=0;for(const v of a){const d=v-m;m2+=d*d;m3+=d*d*d;}
+  const sd=n>1?Math.sqrt(m2/(n-1)):NaN;const g1=m2>0?(m3/n)/Math.pow(m2/n,1.5):NaN;return {n,mean:m,sd,skew:g1};}
+const fmt=(v,d=2)=>Number.isFinite(v)?v.toLocaleString('zh-TW',{minimumFractionDigits:d,maximumFractionDigits:d}):'—';
+const fN=v=>v.toLocaleString('zh-TW');
+function niceStep(span,target){const raw=span/target,e=Math.pow(10,Math.floor(Math.log10(raw)));return [1,2,2.5,5,10].map(k=>k*e).find(k=>raw<=k+1e-12);}
+function ticks(a,b,target){const s=niceStep(b-a,target),out=[];for(let v=Math.ceil(a/s-1e-9)*s;v<=b+1e-9;v+=s)out.push(+v.toFixed(8));return out;}
+const tl=v=>+v.toFixed(6)+'';
+function autoDom(P,n){
+  const se=P.sd/Math.sqrt(n),sk=P.skew/Math.sqrt(n);
+  let lo=P.mu-(4.2-Math.min(1.5,sk*0.6))*se,hi=P.mu+(4.2+2*sk)*se;
+  lo=Math.max(lo,P.dom[0]);hi=Math.min(hi,P.dom[1]);
+  const s=niceStep(hi-lo,6);lo=Math.max(P.dom[0],Math.floor(lo/s)*s);hi=Math.min(P.dom[1],Math.ceil(hi/s)*s);
+  return [lo,hi];
+}
 
-        // 更新母體圖表
-        function updatePopulationChart() {
-            let p = distParams[currentDist];
-            let data = [];
-            for (let i = 0; i < NUM_BINS; i++) {
-                let x = X_MIN + i * BIN_WIDTH + (BIN_WIDTH / 2);
-                data.push(p.pdf(x));
-            }
-            popChartInstance.data.datasets[0].data = data;
-            
-            // 動態調整 Y 軸最大值以適應不同分佈
-            let maxY = Math.max(...data) * 1.1;
-            popChartInstance.options.scales.y.max = maxY > 0 ? maxY : 0.1;
-            
-            popChartInstance.update();
-        }
+/* ================= 主圖（第 1、2、3、5 頁） ================= */
+const W=1100,H=760,ML=86,MR=34,TT=40,TB=264,BT=356,BB=682;
+const layer=$('layer');
+function sx(dom){return v=>ML+(v-dom[0])/(dom[1]-dom[0])*(W-ML-MR);}
+function pdfPath(P,X,yTop,yBot,dom,peak){
+  const N=600;let d='';for(let i=0;i<=N;i++){const x=dom[0]+(dom[1]-dom[0])*i/N;const y=yBot-P.pdf(x)/peak*(yBot-yTop);d+=(i?'L':'M')+X(x).toFixed(1)+' '+y.toFixed(1);}return d;}
+function pdfPeak(P,dom){let m=0;for(let i=0;i<=1200;i++){m=Math.max(m,P.pdf(dom[0]+(dom[1]-dom[0])*i/1200));}return m;}
+function jit(i){const s=Math.sin(i*12.9898+st.n*.7)*43758.5453;return s-Math.floor(s);}
 
-        // 更新樣本平均數圖表
-        function updateSampleChart() {
-            let histData = createHistogramData(sampleMeans);
-            sampleChartInstance.data.datasets[1].data = histData; // 更新直方圖資料
+function renderMain(){
+  const t=st.tab,P=POPS[t===1?'exp':st.pop],pd=P.dom,Xt=sx(pd);
+  const fixed=$('fixAxis').checked||t===1;
+  const n=t===1?30:st.n,hd=fixed?pd:autoDom(P,n),Xb=sx(hd);
+  let g='';
+  // ---- 上圖：母體 ----
+  g+=`<text x="${ML}" y="26" font-size="19" font-weight="700" fill="#0A1045">母體：${P.var}（${P.unit}）｜${P.type}</text>`;
+  g+=`<text x="${W-MR}" y="26" text-anchor="end" font-size="17" fill="#555B7A">μ = ${fmt(P.mu,P.dp)}　σ = ${fmt(P.sd,P.dp)}</text>`;
+  const pk=pdfPeak(P,pd)*1.08;
+  // 下圖放大範圍
+  if(!fixed&&(hd[0]>pd[0]+1e-9||hd[1]<pd[1]-1e-9)){
+    g+=`<rect x="${Xt(hd[0])}" y="${TT}" width="${Xt(hd[1])-Xt(hd[0])}" height="${TB-TT}" fill="#6C4BEF" fill-opacity=".07" stroke="#6C4BEF" stroke-opacity=".45" stroke-dasharray="5 5"/>`;
+  }
+  g+=`<g clip-path="url(#clipTop)"><path d="${pdfPath(P,Xt,TT,TB,pd,pk)}L${Xt(pd[1])} ${TB}L${Xt(pd[0])} ${TB}Z" fill="#F3F0FF"/><path d="${pdfPath(P,Xt,TT,TB,pd,pk)}" fill="none" stroke="#555B7A" stroke-width="2.5"/></g>`;
+  g+=`<line x1="${ML}" x2="${W-MR}" y1="${TB}" y2="${TB}" stroke="#A9A5C8"/>`;
+  for(const v of ticks(pd[0],pd[1],8)) g+=`<line x1="${Xt(v)}" x2="${Xt(v)}" y1="${TB}" y2="${TB+6}" stroke="#A9A5C8"/><text x="${Xt(v)}" y="${TB+25}" text-anchor="middle" font-size="16" fill="#7C819C">${tl(v)}</text>`;
+  g+=`<line x1="${Xt(P.mu)}" x2="${Xt(P.mu)}" y1="${TT+4}" y2="${TB}" stroke="#6C4BEF" stroke-width="2.5" stroke-dasharray="7 5"/>`;
+  g+=`<text x="${Xt(P.mu)+8}" y="${TT+22}" font-size="17" font-weight="700" fill="#4B32B8">μ = ${fmt(P.mu,P.dp)}</text>`;
+  g+=`<text transform="translate(30 ${(TT+TB)/2}) rotate(-90)" text-anchor="middle" font-size="16" fill="#555B7A">機率密度</text>`;
+  // 這一組的點
+  if(t===2&&st.cur){
+    const c=st.cur,k=c.shown;
+    for(let i=0;i<k;i++){const v=c.vals[i],out=v>pd[1]||v<pd[0],x=Xt(Math.min(pd[1],Math.max(pd[0],v))),y=TB-16-jit(i)*Math.min(110,30+st.n*2);
+      g+=`<circle cx="${x}" cy="${y}" r="${st.n>100?5:7}" fill="${out?'#fff':'#D61FA3'}" stroke="${out?'#D61FA3':'#fff'}" stroke-width="2"/>`;}
+    if(c.done){const xm=Xt(c.mean);
+      g+=`<line x1="${xm}" x2="${xm}" y1="${TT}" y2="${TB}" stroke="#D61FA3" stroke-width="3.5"/>`;
+      const right=xm<W-MR-260;
+      g+=`<text x="${xm+(right?10:-10)}" y="${TT+48}" text-anchor="${right?'start':'end'}" font-size="19" font-weight="900" fill="#A3127B">這組的 x̄ = ${fmt(c.mean,P.dp)}</text>`;
+    }
+    const nOut=c.vals.slice(0,k).filter(v=>v>pd[1]).length;
+    if(nOut) g+=`<text x="${W-MR}" y="${TB-8}" text-anchor="end" font-size="15" fill="#A3127B">空心點：${nOut} 個值超過 ${tl(pd[1])}，畫在右邊界</text>`;
+  }
 
-            let showCurve = document.getElementById('showCurve').checked;
-            
-            if (showCurve && sampleMeans.length > 0) {
-                // 計算理論常態曲線資料並縮放至與直方圖同高
-                let p = distParams[currentDist];
-                let theoStdErr = p.std / Math.sqrt(sampleSize);
-                
-                // 曲線的縮放係數 (總面積 = 樣本數 * 組距)
-                let scaleFactor = sampleMeans.length * BIN_WIDTH;
-                
-                let curveData = [];
-                for (let i = 0; i < NUM_BINS; i++) {
-                    let x = X_MIN + i * BIN_WIDTH + (BIN_WIDTH / 2);
-                    let y = normalPdf(x, p.mean, theoStdErr) * scaleFactor;
-                    curveData.push(y);
-                }
-                sampleChartInstance.data.datasets[0].data = curveData;
-            } else {
-                sampleChartInstance.data.datasets[0].data = [];
-            }
+  // ---- 下圖 ----
+  if(t===1){
+    g+=`<text x="${ML}" y="${BT-34}" font-size="19" font-weight="700" fill="#0A1045">每組 30 位顧客的平均消費 x̄，抽 1,000 組的直方圖會長怎樣？</text>`;
+    g+=`<line x1="${ML}" x2="${W-MR}" y1="${BB}" y2="${BB}" stroke="#A9A5C8"/>`;
+    for(const v of ticks(pd[0],pd[1],8)) g+=`<text x="${Xb(v)}" y="${BB+26}" text-anchor="middle" font-size="16" fill="#7C819C">${tl(v)}</text>`;
+    g+=`<text x="${(ML+W-MR)/2}" y="${BB+58}" text-anchor="middle" font-size="17" fill="#555B7A">樣本平均數 x̄（元）</text>`;
+    if(st.guess===null){g+=`<text x="${(ML+W-MR)/2}" y="${(BT+BB)/2+40}" text-anchor="middle" font-size="140" font-weight="900" fill="#DDD8F5">？</text><text x="${(ML+W-MR)/2}" y="${BB-24}" text-anchor="middle" font-size="19" fill="#7C819C">在右邊選一個你的預測</text>`;}
+    else{const f=GUESS[st.guess].f,pk2=Math.max(...Array.from({length:301},(_,i)=>f(600*i/300)))*1.1;let d='';for(let i=0;i<=300;i++){const x=600*i/300;d+=(i?'L':'M')+Xb(x).toFixed(1)+' '+(BB-f(x)/pk2*(BB-BT)).toFixed(1);}
+      g+=`<path d="${d}L${Xb(600)} ${BB}L${Xb(0)} ${BB}Z" fill="#D61FA3" fill-opacity=".10"/><path d="${d}" fill="none" stroke="#D61FA3" stroke-width="3.5" stroke-dasharray="10 7"/>`;
+      g+=`<text x="${W-MR-10}" y="${BT+24}" text-anchor="end" font-size="20" font-weight="900" fill="#A3127B">你的預測：${'ABCD'[st.guess]}（第 4 頁揭曉）</text>`;}
+    layer.innerHTML=g;return;
+  }
+  const M=st.means,nb=fixed?60:40,bw=(hd[1]-hd[0])/nb,cnt=new Array(nb).fill(0);let below=0,above=0;
+  for(const v of M){if(v<hd[0]){below++;continue;}if(v>hd[1]){above++;continue;}cnt[Math.min(nb-1,Math.floor((v-hd[0])/bw))]++;}
+  const se=P.sd/Math.sqrt(st.n),showC=$('showCurve').checked&&M.length>0;
+  let ymax=Math.max(1,...cnt);if(showC)ymax=Math.max(ymax,M.length*bw*npdf(P.mu,P.mu,se));
+  const ys=ticks(0,ymax*1.08,5);const ytop=ys[ys.length-1]<ymax*1.02?ys[ys.length-1]+(ys[1]-ys[0]):ys[ys.length-1];
+  const Yb=c=>BB-c/ytop*(BB-BT);
+  g+=`<text x="${ML}" y="${BT-34}" font-size="19" font-weight="700" fill="#0A1045">樣本平均數 x̄ 的分配（每組 n = ${st.n}，已抽 ${fN(M.length)} 組）</text>`;
+  if(!fixed) g+=`<text x="${W-MR}" y="${BT-34}" text-anchor="end" font-size="16" fill="#555B7A">橫軸已放大（上圖紫色框的範圍）</text>`;
+  for(const v of ticks(0,ytop,5)) g+=`<line x1="${ML}" x2="${W-MR}" y1="${Yb(v)}" y2="${Yb(v)}" stroke="#ECE9F7"/><text x="${ML-8}" y="${Yb(v)+5}" text-anchor="end" font-size="15" fill="#7C819C">${fN(v)}</text>`;
+  g+=`<text transform="translate(26 ${(BT+BB)/2}) rotate(-90)" text-anchor="middle" font-size="16" fill="#555B7A">組數</text>`;
+  g+='<g clip-path="url(#clipBot)">';
+  const lastBin=st.last!==null&&st.last>=hd[0]&&st.last<=hd[1]?Math.min(nb-1,Math.floor((st.last-hd[0])/bw)):-1;
+  const bpx=(W-ML-MR)/nb;
+  cnt.forEach((c,i)=>{if(!c)return;g+=`<rect x="${ML+i*bpx+0.6}" y="${Yb(c)}" width="${Math.max(1,bpx-1.2)}" height="${BB-Yb(c)}" fill="${i===lastBin?'#D61FA3':'#B9AEF5'}"/>`;});
+  if(showC){let d='';for(let i=0;i<=400;i++){const x=hd[0]+(hd[1]-hd[0])*i/400;d+=(i?'L':'M')+Xb(x).toFixed(1)+' '+Yb(M.length*bw*npdf(x,P.mu,se)).toFixed(1);}
+    g+=`<path d="${d}" fill="none" stroke="#6C4BEF" stroke-width="3.5"/>`;}
+  g+='</g>';
+  g+=`<line x1="${ML}" x2="${W-MR}" y1="${BB}" y2="${BB}" stroke="#A9A5C8"/><line x1="${ML}" x2="${ML}" y1="${BT}" y2="${BB}" stroke="#A9A5C8"/>`;
+  for(const v of ticks(hd[0],hd[1],8)) g+=`<line x1="${Xb(v)}" x2="${Xb(v)}" y1="${BB}" y2="${BB+6}" stroke="#A9A5C8"/><text x="${Xb(v)}" y="${BB+26}" text-anchor="middle" font-size="16" fill="#7C819C">${tl(v)}</text>`;
+  g+=`<text x="${(ML+W-MR)/2}" y="${BB+60}" text-anchor="middle" font-size="17" fill="#555B7A">樣本平均數 x̄（${P.unit}）</text>`;
+  if(M.length&&P.mu>=hd[0]&&P.mu<=hd[1]) g+=`<line x1="${Xb(P.mu)}" x2="${Xb(P.mu)}" y1="${BT}" y2="${BB}" stroke="#6C4BEF" stroke-width="1.5" stroke-dasharray="4 5" stroke-opacity=".7"/>`;
+  if(showC) g+=`<text x="${W-MR-8}" y="${BT+22}" text-anchor="end" font-size="17" font-weight="700" fill="#4B32B8">紫線：理論常態 N(μ, σ²/n)，標準誤 σ/√n = ${fmt(se,P.dp)}</text>`;
+  if(below+above) g+=`<text x="${W-MR-8}" y="${BT+46}" text-anchor="end" font-size="16" fill="#A3127B">另有 ${fN(below+above)} 組超出圖的範圍${fixed?'':'（可勾選「固定為母體尺度」）'}</text>`;
+  if(!M.length) g+=`<text x="${(ML+W-MR)/2}" y="${(BT+BB)/2}" text-anchor="middle" font-size="20" fill="#7C819C">還沒有抽樣：按右邊的按鈕開始抽</text>`;
+  if(st.last!==null&&t===2){const xl=Math.min(W-MR,Math.max(ML,Xb(st.last)));
+    g+=`<rect x="${xl-72}" y="${BB+6}" width="144" height="28" rx="14" fill="#F9E900"/><text x="${xl}" y="${BB+26}" text-anchor="middle" font-size="16" font-weight="900" fill="#0A1045" style="stroke:none">x̄ = ${fmt(st.last,P.dp)}</text>`;}
+  layer.innerHTML=g;
+}
 
-            sampleChartInstance.update();
-        }
+/* ================= 第 4 頁：6 張小圖 ================= */
+function compute4(){
+  const P=POPS[st.pop],out={};
+  N4.forEach(n=>{const r=mulberry32(9973+POP_KEYS.indexOf(st.pop)*31+n*7),a=new Float64Array(2000);
+    for(let j=0;j<2000;j++){let s=0;for(let i=0;i<n;i++)s+=P.gen(r);a[j]=s/n;}out[n]=a;});
+  st.m4={pop:st.pop,data:out};
+}
+function render4(){
+  if(!st.m4||st.m4.pop!==st.pop)compute4();
+  const P=POPS[st.pop],zoom=$('zoom4').checked;let g='';
+  const cols=3,x0=24,y0=8,gw=(W-48-2*28)/cols,gh=(H-16-30-26)/2;
+  N4.forEach((n,k)=>{
+    const cx=x0+(k%cols)*(gw+28),cy=y0+Math.floor(k/cols)*(gh+30);
+    const l=cx+12,r=cx+gw-12,t=cy+56,b=cy+gh-46;
+    const dom=zoom?autoDom(P,n):P.dom,X=v=>l+(v-dom[0])/(dom[1]-dom[0])*(r-l);
+    const a=st.m4.data[n],nb=30,bw=(dom[1]-dom[0])/nb,cnt=new Array(nb).fill(0);
+    for(const v of a){if(v<dom[0]||v>dom[1])continue;cnt[Math.min(nb-1,Math.floor((v-dom[0])/bw))]++;}
+    const se=P.sd/Math.sqrt(n),cPk=2000*bw*npdf(P.mu,P.mu,se),ym=Math.max(...cnt,Math.min(cPk,Math.max(...cnt)*1.6))*1.1,Y=c=>b-c/ym*(b-t);
+    const hl=st.pop==='exp'&&n===30;
+    g+=`<rect x="${cx}" y="${cy}" width="${gw}" height="${gh}" rx="10" fill="#fff" stroke="${hl?'#D61FA3':'#DDD8F5'}" stroke-width="${hl?3:1.5}" ${hl?'stroke-dasharray="9 6"':''}/>`;
+    g+=`<text x="${cx+14}" y="${cy+32}" font-size="24" font-weight="900" fill="#0A1045">n = ${n}</text>`;
+    const m=moments(Array.from(a));
+    g+=`<text x="${cx+gw-14}" y="${cy+26}" text-anchor="end" font-size="16" fill="#4B32B8" font-weight="700">標準誤 ${fmt(se,P.dp)}</text><text x="${cx+gw-14}" y="${cy+47}" text-anchor="end" font-size="16" fill="#555B7A">偏態 ${fmt(m.skew,2)}</text>`;
+    if(hl) g+=`<text x="${cx+110}" y="${cy+32}" font-size="16" font-weight="700" fill="#A3127B">第 1 頁的問題</text>`;
+    const bpx=(r-l)/nb;
+    cnt.forEach((c,i)=>{if(c)g+=`<rect x="${l+i*bpx+0.5}" y="${Y(c)}" width="${Math.max(1,bpx-1)}" height="${b-Y(c)}" fill="#B9AEF5"/>`;});
+    let d='';for(let i=0;i<=240;i++){const x=dom[0]+(dom[1]-dom[0])*i/240;const yy=Math.max(t-6,Y(2000*bw*npdf(x,P.mu,se)));d+=(i?'L':'M')+X(x).toFixed(1)+' '+yy.toFixed(1);}
+    g+=`<path d="${d}" fill="none" stroke="#6C4BEF" stroke-width="2.8"/>`;
+    g+=`<line x1="${l}" x2="${r}" y1="${b}" y2="${b}" stroke="#A9A5C8"/>`;
+    for(const v of ticks(dom[0],dom[1],4)) g+=`<text x="${X(v)}" y="${b+22}" text-anchor="middle" font-size="15" fill="#7C819C">${tl(v)}</text>`;
+  });
+  g+=`<text x="${W/2}" y="${H-6}" text-anchor="middle" font-size="16" fill="#555B7A">樣本平均數 x̄（${P.unit}）｜${P.name}（${P.type}）｜每張圖 2,000 組</text>`;
+  layer.innerHTML=g;
+  // 側欄表格
+  let h=`<thead><tr><th>n</th><th>標準誤 σ/√n</th><th>是 σ 的幾倍</th><th>理論偏態 γ/√n</th><th>模擬偏態</th></tr></thead><tbody>`;
+  N4.forEach(n=>{const m=moments(Array.from(st.m4.data[n]));h+=`<tr class="${n===30&&st.pop==='exp'?'hl':''}"><td>${n}</td><td>${fmt(P.sd/Math.sqrt(n),P.dp)}</td><td>${fmt(1/Math.sqrt(n),3)}</td><td>${fmt(P.skew/Math.sqrt(n),2)}</td><td>${fmt(m.skew,2)}</td></tr>`;});
+  $('tab4').innerHTML=h+'</tbody>';
+  // 揭曉
+  const ex=POPS.exp,se30=ex.sd/Math.sqrt(30);
+  let rv='<h3>揭曉第 1 頁的答案</h3>';
+  if(st.guess===null) rv+=`<p>你還沒有在第 1 頁作答。可以先回去猜一猜，再來看答案。</p><p><button class="btn" id="back1">回第 1 頁</button></p>`;
+  else rv+=`<p>你選了 <strong>${'ABCD'[st.guess]}</strong>。${st.guess===2?'<span style="color:var(--good)">答對了！</span>':'正確答案是 <strong>C</strong>。'}</p>`;
+  rv+=`<p>切到「超商消費」，看<span class="c-coral num">桃紅虛線框</span>的 n = 30：x̄ 的分配接近鐘形，而且比母體窄很多，標準誤只有 ${fmt(se30,1)} 元，是 σ 的 1/√30 ≈ 0.18 倍。仔細看還帶一點點右偏（理論偏態 ${fmt(ex.skew/Math.sqrt(30),2)}），n 再大就更對稱。</p>`;
+  if(st.pop!=='exp') rv+=`<p><button class="btn" id="toExp">切到「超商消費」</button></p>`;
+  $('reveal4').innerHTML=rv;
+  $('back1')?.addEventListener('click',()=>setTab(1));
+  $('toExp')?.addEventListener('click',()=>{setPop('exp');});
+}
 
-    </script>
+/* ================= 統計列與側欄 ================= */
+function statbar(){
+  const t=st.tab,P=POPS[t===1?'exp':st.pop],m=moments(st.means),se=P.sd/Math.sqrt(st.n);
+  const it=(l,v,c='')=>`<span><span class="lbl">${l}</span><span class="big ${c}">${v}</span></span>`;
+  let h='';
+  if(t===1) h=it('母體','超商消費（右偏）')+it('母體平均數 μ',fmt(P.mu,0)+' 元')+it('母體標準差 σ',fmt(P.sd,0)+' 元')+it('母體偏態 γ',fmt(P.skew,1));
+  else if(t===4) h=it('母體',`${P.name}（${P.type}）`)+it('μ',fmt(P.mu,P.dp))+it('σ',fmt(P.sd,P.dp))+it('母體偏態 γ',fmt(P.skew,2));
+  else{
+    h=it('μ',fmt(P.mu,P.dp))+it('σ',fmt(P.sd,P.dp))+it('n',st.n)+it('已抽組數',fN(st.means.length));
+    if(t===5) h+=it('x̄ 的標準差',m&&m.n>1?fmt(m.sd,P.dp):'—','b')+it('σ/√n',fmt(se,P.dp))+it('x̄ 的偏態',m&&m.n>2?fmt(m.skew,2):'—','b');
+    else h+=it('x̄ 的平均',m?fmt(m.mean,P.dp):'—','b')+it('x̄ 的標準差',m&&m.n>1?fmt(m.sd,P.dp):'—','b')+it('標準誤 σ/√n',fmt(se,P.dp));
+  }
+  $('statbar').innerHTML=h;
+}
+function sidePanels(){
+  const P=POPS[st.pop],m=moments(st.means),se=P.sd/Math.sqrt(st.n),dp=P.dp;
+  // 2
+  if(st.cur){const c=st.cur,k=c.shown,sh=c.vals.slice(0,k);
+    const ss=sh.reduce((a,b)=>a+b,0);
+    $('curInfo').innerHTML=c.done?`這組抽到 ${st.n} 個值，最小 ${fmt(Math.min(...sh),dp)}、最大 ${fmt(Math.max(...sh),dp)} ${P.unit}<br>x̄ = ${fmt(ss,dp)} ÷ ${st.n} = <span class="c-coral">${fmt(c.mean,dp)}</span> ${P.unit}<br><span style="font-weight:400">和 μ = ${fmt(P.mu,dp)} 相差 ${fmt(c.mean-P.mu,dp)}</span>`
+      :`抽樣中……已抽 ${k} / ${st.n} 個`;
+    $('curVals').textContent=sh.map(v=>fmt(v,dp)).join('、')||'—';
+  } else if(st.last!==null){$('curInfo').innerHTML=`剛剛連續抽了好幾組，最後一組 x̄ = <span class="c-coral">${fmt(st.last,dp)}</span> ${P.unit}。`;}
+  else {$('curInfo').textContent=st.means.length?`已抽 ${fN(st.means.length)} 組。按「抽 1 組（慢動作）」看單一組的過程。`:'還沒有抽樣。';$('curVals').textContent='—';}
+  // 3
+  const rel=(a,b)=>b?fmt(100*(a-b)/b,1)+'%':'—';
+  $('cmp3').innerHTML=`<thead><tr><th></th><th>理論值</th><th>實驗值</th><th>差異</th></tr></thead><tbody>
+    <tr><td>x̄ 的平均數 μ<sub>x̄</sub></td><td>μ = ${fmt(P.mu,dp)}</td><td>${m?fmt(m.mean,dp):'—'}</td><td>${m?rel(m.mean,P.mu):'—'}</td></tr>
+    <tr><td>x̄ 的標準差 σ<sub>x̄</sub></td><td>σ/√n = ${fmt(se,dp)}</td><td>${m&&m.n>1?fmt(m.sd,dp):'—'}</td><td>${m&&m.n>1?rel(m.sd,se):'—'}</td></tr></tbody>`;
+  $('cmp3note').textContent=`目前：${P.name}，σ = ${fmt(P.sd,dp)}，n = ${st.n}，σ/√n = ${fmt(P.sd,dp)} ÷ √${st.n} = ${fmt(se,dp)} ${P.unit}。`+(m&&m.n<1000?' 抽的組數愈多，實驗值愈接近理論值。':'');
+  // 5
+  $('skew5').innerHTML=`目前：${P.name}（母體偏態 γ = ${fmt(P.skew,2)}），n = ${st.n}<br>理論上 x̄ 的偏態 γ/√n = <span class="c-blue">${fmt(P.skew/Math.sqrt(st.n),2)}</span>；模擬結果 <span class="c-coral">${m&&m.n>2?fmt(m.skew,2):'（尚未抽樣）'}</span>`+
+    `<br><span style="font-weight:400;color:var(--ink2)">偏態接近 0 才算對稱；常見的經驗判斷是小於約 0.5。</span>`;
+  $('drawCur5').textContent=`用目前設定抽 10,000 組（${P.name}，n = ${st.n}）`;
+  // 共用按鈕狀態
+  const busy=!!st.anim;$('draw1').disabled=busy;$('draw10').disabled=busy;
+}
+function render(){
+  statbar();
+  if(st.tab===4)render4();else if(st.tab!==6)renderMain();
+  sidePanels();
+}
+
+/* ================= 第 2 頁：慢動作抽樣 ================= */
+function draw1(){
+  if(st.anim)return;stopAuto();
+  const g=oneGroup();st.cur={vals:g.vals,mean:g.mean,shown:0,done:false};st.last=null;
+  const step=Math.max(1,Math.ceil(st.n/30)),dt=st.n<=10?120:45;
+  const tick=()=>{st.cur.shown=Math.min(st.n,st.cur.shown+step);
+    if(st.cur.shown<st.n){render();st.anim=setTimeout(tick,dt);}
+    else{st.anim=setTimeout(()=>{st.cur.done=true;st.means.push(st.cur.mean);st.last=st.cur.mean;st.anim=null;render();},280);render();}};
+  tick();
+}
+function drawQuick(k){for(let j=0;j<k;j++){const g=oneGroup();st.means.push(g.mean);if(j===k-1){st.cur={vals:g.vals,mean:g.mean,shown:st.n,done:true};st.last=g.mean;}}render();}
+function stopAuto(){if(st.auto){clearInterval(st.auto);st.auto=null;}$('autoBtn').setAttribute('aria-pressed','false');$('autoBtn').textContent='自動連續抽';}
+$('draw1').onclick=draw1;
+$('draw10').onclick=()=>{stopAuto();drawQuick(10);};
+$('autoBtn').onclick=()=>{if(st.auto){stopAuto();return;}if(st.anim)return;
+  $('autoBtn').setAttribute('aria-pressed','true');$('autoBtn').textContent='停止';st.auto=setInterval(()=>drawQuick(1),260);};
+
+/* ================= 控制項 ================= */
+const nSl=$('nSlider');nSl.max=N_LIST.length-1;
+function setN(n){st.n=n;nSl.value=N_LIST.indexOf(n);$('nOut').textContent='n = '+n;
+  document.querySelectorAll('[data-n]').forEach(b=>b.classList.toggle('primary',+b.dataset.n===n));resetSim();render();}
+nSl.addEventListener('input',e=>setN(N_LIST[+e.target.value]));
+document.querySelectorAll('[data-n]').forEach(b=>b.addEventListener('click',()=>setN(+b.dataset.n)));
+function setPop(k){st.pop=k;document.querySelectorAll('[data-pop]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.pop===k));resetSim();render();}
+document.querySelectorAll('[data-pop]').forEach(b=>b.addEventListener('click',()=>setPop(b.dataset.pop)));
+document.querySelectorAll('[data-k]').forEach(b=>b.addEventListener('click',()=>{stopAuto();drawMany(+b.dataset.k);}));
+document.querySelectorAll('[data-act="reset"]').forEach(b=>b.addEventListener('click',()=>{resetSim();render();}));
+document.querySelectorAll('[data-act="reseed"]').forEach(b=>b.addEventListener('click',()=>{st.seed++;resetSim();render();}));
+['showCurve','fixAxis','zoom4'].forEach(id=>$(id).addEventListener('change',render));
+$('drawCur5').onclick=()=>{stopAuto();drawMany(10000);};
+document.querySelectorAll('[data-demo]').forEach(b=>b.addEventListener('click',()=>{const d=b.dataset.demo;
+  st.pop=d==='exp30'?'exp':'lognorm';document.querySelectorAll('[data-pop]').forEach(x=>x.setAttribute('aria-pressed',x.dataset.pop===st.pop));
+  setN(d==='300'?300:30);drawMany(10000);}));
+
+/* ================= 第 1 頁：猜一猜 ================= */
+const GUESS=[
+  {t:'跟母體一樣右偏，只是比較矮',f:x=>Math.exp(-x/120)},
+  {t:'左右對稱的鐘形，寬度和母體差不多',f:x=>npdf(x,120,120)*(x>=0)},
+  {t:'左右對稱的鐘形，集中在 120 附近、窄很多',f:x=>npdf(x,120,21.9)},
+  {t:'平平一片，每個金額都差不多',f:x=>(x>=0&&x<=600)?1:0}
+];
+function miniSvg(f){let pk=0;for(let i=0;i<=120;i++)pk=Math.max(pk,f(600*i/120));let d='';for(let i=0;i<=120;i++){const x=600*i/120;d+=(i?'L':'M')+(8+i*184/120).toFixed(1)+' '+(70-f(x)/pk*52).toFixed(1);}
+  return `<svg viewBox="0 0 200 80" aria-hidden="true"><line x1="8" x2="192" y1="70" y2="70" stroke="#A9A5C8"/><path d="${d}L192 70L8 70Z" fill="#DDD8F5" stroke="#6C4BEF" stroke-width="2.5"/></svg>`;}
+$('guessBox').innerHTML=GUESS.map((g,i)=>`<button data-g="${i}" aria-pressed="false">${miniSvg(g.f)}<b>${'ABCD'[i]}</b>${g.t}</button>`).join('');
+$('guessBox').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;st.guess=+b.dataset.g;
+  $('guessBox').querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));
+  $('guessFb').textContent=`已記下你的預測：${'ABCD'[st.guess]}。答案在第 4 頁揭曉，先到第 2 頁自己抽抽看吧！`;$('guessNext').hidden=false;render();});
+$('go2').onclick=()=>{setPop('exp');setN(30);setTab(2);};
+$('go4').onclick=()=>{setPop('exp');setTab(4);};
+
+/* ================= 分頁 ================= */
+const tabs=document.querySelectorAll('nav.tabs button'),NT=tabs.length;
+function setTab(n){
+  if(n!==2)stopAuto();
+  st.tab=n;tabs.forEach(b=>b.setAttribute('aria-selected',b.dataset.tab==n));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('on',p.dataset.panel==n));
+  $('main').classList.toggle('full',n===NT);
+  $('rowPop').hidden=n===1;$('rowN').hidden=n===1||n===4;$('rowView').hidden=n===1||n===4;$('rowView4').hidden=n!==4;
+  render();window.scrollTo({top:0});document.querySelector('.side').scrollTop=0;
+}
+tabs.forEach(b=>b.addEventListener('click',()=>setTab(+b.dataset.tab)));
+document.querySelector('nav.tabs').addEventListener('keydown',e=>{if(e.key!=='ArrowRight'&&e.key!=='ArrowLeft')return;let n=st.tab+(e.key==='ArrowRight'?1:-1);n=(n+NT-1)%NT+1;setTab(n);tabs[n-1].focus();});
+
+/* ================= 自我檢測 ================= */
+const QUIZ=[
+ {q:'中央極限定理說的是：當 n 夠大時，什麼會接近常態分配？',o:['母體的分配','樣本中每一筆資料的分配','樣本平均數 x̄ 的抽樣分配','樣本數 n 本身'],a:2,
+  e:'中央極限定理講的是「統計量 x̄」在重複抽樣下的分配。母體與樣本資料的形狀都不會因為 n 變大而改變。'},
+ {q:'超商單筆消費金額的 σ = 120 元。每次抽 36 位顧客，樣本平均數的標準誤是多少？',o:['120 元','20 元','3.33 元','10 元'],a:1,
+  e:'標準誤 = σ/√n = 120 ÷ √36 = 120 ÷ 6 = 20 元。注意分母是 √n，不是 n（120 ÷ 36 = 3.33 是常見的算錯）。'},
+ {q:'想讓樣本平均數的標準誤減半，樣本數要變成原來的幾倍？',o:['2 倍','4 倍','一半','只要多加 30 個'],a:1,
+  e:'標準誤和 √n 成反比。要讓 σ/√n 減半，√n 要變 2 倍，也就是 n 變 4 倍。'},
+ {q:'隨機抽 500 位超商顧客（母體右偏），把這 500 筆消費金額畫成直方圖，會看到什麼？',o:['接近常態的鐘形','仍然是右偏','均勻分配','一定是雙峰'],a:1,
+  e:'樣本資料會反映母體的形狀，所以仍然右偏。會接近常態的是「很多組 x̄」的分配，不是單一樣本內的資料。這是最常見的迷思。'},
+ {q:'網購訂單金額是極端右偏的母體。每組 n = 30，x̄ 的抽樣分配會怎樣？',o:['n ≥ 30，所以一定是常態','仍可能明顯右偏，需要更大的 n','會變成左偏','無法計算平均數'],a:1,
+  e:'n ≥ 30 只是經驗法則。x̄ 的偏態約為 γ/√n，母體愈偏，需要的 n 愈大（回第 5 頁按按鈕就能看到）。'},
+ {q:'手搖飲每杯容量本身就是常態分配。每組只抽 n = 5 杯，x̄ 的抽樣分配是？',o:['常態分配，任何 n 都是','要 n ≥ 30 才會是常態','右偏','均勻分配'],a:0,
+  e:'母體是常態時，x̄ 不論 n 多小都剛好是常態分配 N(μ, σ²/n)。中央極限定理處理的是「母體不是常態」的情況。'}
+];
+let answered={};
+function buildQuiz(){answered={};
+  $('quizBox').innerHTML=QUIZ.map((q,i)=>`<div class="q" data-q="${i}"><h3>${i+1}. ${q.q}</h3><div class="opts">${q.o.map((o,j)=>`<button data-j="${j}">${String.fromCharCode(65+j)}. ${o}</button>`).join('')}</div><div class="exp"></div></div>`).join('');
+  $('score').textContent='';}
+$('quizBox').addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;const box=b.closest('.q'),i=+box.dataset.q;if(answered[i]!==undefined)return;
+  const j=+b.dataset.j,q=QUIZ[i];answered[i]=j===q.a;
+  box.querySelectorAll('button').forEach((x,k)=>{if(k===q.a)x.classList.add('right');else if(k===j)x.classList.add('wrong');});
+  const ex=box.querySelector('.exp');ex.classList.add('on');
+  ex.innerHTML=`<strong>${j===q.a?'答對了。':'這題很多人會選錯，正確答案是 '+String.fromCharCode(65+q.a)+'。'}</strong> ${q.e}`;
+  if(Object.keys(answered).length===QUIZ.length){const c=Object.values(answered).filter(Boolean).length;$('score').textContent=`完成！答對 ${c} / ${QUIZ.length} 題。`+(c<QUIZ.length?' 回到對應的分頁再操作一次，會更有感覺。':'');}
+});
+$('quizReset').onclick=buildQuiz;
+
+/* ================= 16:9 縮放與全螢幕 ================= */
+const app=$('app');
+function fitStage(){
+  const on=window.innerWidth>=900&&window.innerWidth/window.innerHeight>=1.15;
+  document.body.classList.toggle('stage',on);document.documentElement.style.fontSize=on?'22px':'';
+  if(on){const k=Math.min(window.innerWidth/1920,window.innerHeight/1080);
+    app.style.transform=`scale(${k})`;app.style.left=((window.innerWidth-1920*k)/2)+'px';app.style.top=((window.innerHeight-1080*k)/2)+'px';}
+  else{app.style.transform='';app.style.left='';app.style.top='';}
+}
+window.addEventListener('resize',fitStage);fitStage();
+function toggleFS(){if(!document.fullscreenElement)document.documentElement.requestFullscreen?.();else document.exitFullscreen?.();}
+$('fsBtn').onclick=toggleFS;
+document.addEventListener('fullscreenchange',()=>{$('fsBtn').textContent=document.fullscreenElement?'離開全螢幕':'全螢幕';setTimeout(fitStage,50);});
+document.addEventListener('keydown',e=>{if((e.key==='f'||e.key==='F')&&!/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)&&!e.ctrlKey&&!e.metaKey){e.preventDefault();toggleFS();}});
+
+/* ================= 啟動 ================= */
+window.__clt={st,POPS,moments,setPop,setN,setTab,drawMany};
+buildQuiz();
+document.querySelectorAll('[data-pop]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.pop===st.pop));
+setN(10);setTab(1);
+window.addEventListener('load',()=>{if(window.renderMathInElement)renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],throwOnError:false});});
+})();
+</script>
 </body>
 </html>
